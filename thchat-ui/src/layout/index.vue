@@ -26,6 +26,9 @@
             <!-- 右侧侧边竖条 用以隐藏或弹出侧边栏 End -->
 
             <!-- 右边窗口 Start -->
+            <!-- <el-container> -->
+            
+            
             <el-container>
                 <el-header class="header-bg">
                     <app-header />
@@ -41,6 +44,7 @@
                     </el-footer>
                 </el-container>
             </el-container>
+            <!-- </el-container> -->
             <!-- 右边窗口 End -->
         </el-container>
     </div>

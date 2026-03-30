@@ -18,7 +18,7 @@ node -v
 
 ```bash
 # 下载到本地
-git clone https://github.com/Unagi-cq/THChatUI
+git clone https://github.com/Unagi-cq/BUPT
 # 进入web ui目录
 cd ./thchat-ui
 # 安装npm依赖
@@ -212,4 +212,4 @@ location ^~ /ali/remote/
 后端接口部署就很简单了，配置好python3.10环境，安装好包，直接运行就行。
 
 ### 项目目录与代码实现
-请参考：[THChatUI V2 代码视频讲解教程](https://www.bilibili.com/video/BV1xTcVezEKP/)
+请参考：[BUPT V2 代码视频讲解教程](https://www.bilibili.com/video/BV1xTcVezEKP/)

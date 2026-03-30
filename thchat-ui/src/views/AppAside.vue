@@ -3,7 +3,7 @@
         <!-- 上方Logo Start -->
         <div class="logo">
             <img :src="logoSrc" alt="logo" />
-            <span>THChatUI</span>
+            <span>BUPT</span>
         </div>
         <!-- 上方Logo End -->
 
@@ -72,7 +72,7 @@
                     </svg>
                     <div class="option-text">{{ $t('AppAside.tool_setting_name') }}</div>
                 </div>
-                <div class="option" @click="goToPage('/docs')">
+                <!-- <div class="option" @click="goToPage('/docs')">
                     <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
                         fill="none">
                         <path
@@ -101,7 +101,7 @@
                             stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                     <div class="option-text">{{ $t('AppAside.tool_about_name') }}</div>
-                </div>
+                </div> -->
             </div>
         </div>
         <!-- 工具栏 End -->
@@ -388,7 +388,7 @@ $animation-time: 0.3s;
         margin: 0 auto;
         display: grid;
         grid-template-columns: 1fr auto 1fr;
-        grid-template-rows: 1fr 1fr;
+        grid-template-rows: 1fr;
         gap: 2px;
         align-items: center;
         transition: width $animation-time ease;

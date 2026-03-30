@@ -3,8 +3,8 @@
         <div class="title-section">
             <img :src="logoSrc" class="logo" alt="logo" />
 
-            <span class="title">THChatUI</span>
-            <p class="subtitle">欢迎使用<span>THChatUI</span>，一个基于<span>Vue</span>和<span>Element Plus</span>的Web对话管理WebUI。
+            <span class="title">BUPT</span>
+            <p class="subtitle">欢迎使用<span>BUPT</span>，一个基于<span>Vue</span>和<span>Element Plus</span>的Web对话管理WebUI。
             </p>
 
             <p class="description">
@@ -15,8 +15,8 @@
             </p>
 
             <div class="button-group">
-                <el-button @click="openLink('https://github.com/Unagi-cq/THChatUI/tree/main')">查看仓库</el-button>
-                <el-button @click="openLink('https://github.com/Unagi-cq/THChatUI/issues')">问题反馈</el-button>
+                <el-button @click="openLink('https://github.com/Unagi-cq/BUPT/tree/main')">查看仓库</el-button>
+                <el-button @click="openLink('https://github.com/Unagi-cq/BUPT/issues')">问题反馈</el-button>
                 <el-button @click="openLink('https://blog.csdn.net/qq_43592352')">关注我的博客</el-button>
                 <el-tooltip
                     effect="light"

@@ -1,11 +1,11 @@
 <template>
     <div class="header-content">
         <div class="title-container">
-            <span class="header-title" :contenteditable="header_title !== 'THChatUI'" @blur="updateTitle"
+            <span class="header-title" :contenteditable="header_title !== 'BUPT'" @blur="updateTitle"
                 @keydown.enter.prevent="$event.target.blur()" @input="limitTitleLength($event)">
                 {{ header_title }}
             </span>
-            <svg v-show="header_title !== 'THChatUI'" class="title-edit-icon" xmlns="http://www.w3.org/2000/svg"
+            <svg v-show="header_title !== 'BUPT'" class="title-edit-icon" xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24" width="20" height="20" color="#ffffff" fill="none">
                 <path
                     d="M14 12.6483L16.3708 10.2775C16.6636 9.98469 16.81 9.83827 16.8883 9.68032C17.0372 9.3798 17.0372 9.02696 16.8883 8.72644C16.81 8.56849 16.6636 8.42207 16.3708 8.12923C16.0779 7.83638 15.9315 7.68996 15.7736 7.61169C15.473 7.46277 15.1202 7.46277 14.8197 7.61169C14.6617 7.68996 14.5153 7.83638 14.2225 8.12923L11.8517 10.5M14 12.6483L5.77754 20.8708C5.4847 21.1636 5.33827 21.31 5.18032 21.3883C4.8798 21.5372 4.52696 21.5372 4.22644 21.3883C4.06849 21.31 3.92207 21.1636 3.62923 20.8708C3.33639 20.5779 3.18996 20.4315 3.11169 20.2736C2.96277 19.973 2.96277 19.6202 3.11169 19.3197C3.18996 19.1617 3.33639 19.0153 3.62923 18.7225L11.8517 10.5M14 12.6483L11.8517 10.5"
@@ -60,7 +60,7 @@ export default {
     data() {
         return {
             max_title_length: 12,
-            default_title: 'THChatUI'
+            default_title: 'BUPT'
         }
     },
     computed: {

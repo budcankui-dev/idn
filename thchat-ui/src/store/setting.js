@@ -37,25 +37,34 @@ const defaultSettings = {
         Local: ""
     },
     // 平台
-    platform: 'Xunfei_Spark',
+    platform: 'Local',
     // 是否多轮对话
     memory: true,
     // 历史对话轮数限制
     memory_limit: 3,
     // 模型配置
+    //model_config: {
+    //    // 模型类型
+    //    type: "llm",
+    //    // 模型名称
+    //    name: "Spark Lite 🆓",
+    //    // 模型系列
+    //    series: "xunfei",
+    //    // 模型版本
+    //    version: "spark lite",
+    //    // 前处理组索引
+    //    pre_method: "text_xunfei",
+    //    // 后处理组索引
+    //    post_method: "add"
+    //},
     model_config: {
-        // 模型类型
-        type: "llm",
-        // 模型名称
-        name: "Spark Lite 🆓",
-        // 模型系列
-        series: "xunfei",
-        // 模型版本
-        version: "spark lite",
-        // 前处理组索引
-        pre_method: "text_xunfei",
-        // 后处理组索引
-        post_method: "add"
+        "type": "llm",
+        "name": "对话模型",
+        "series": "local",
+        "version": "llm_local",
+        "pre_method": "local",
+        "post_method": "llm_local",
+        "can_web_search": true
     },
     /******************************** 系统默认参数 ********************************/
     // 输入框单次上传的文件数量
@@ -80,7 +89,7 @@ const defaultSettings = {
     web_search_enabled: false,
     /******************************** 看板娘设置 ********************************/
     // 是否启用看板娘
-    live2d_enabled: true,
+    live2d_enabled: false,
     // 看板娘模型索引
     live2d_model_index: 0,
     // 看板娘模型

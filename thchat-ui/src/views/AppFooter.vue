@@ -1,13 +1,14 @@
 <template>
     <el-row :gutter="24" justify="center">
-        <el-col :md="18" :sm="24" :xs="24" style="padding-left: 0;padding-right: 0;">
+        <el-col :md="16" :sm="16" :xs="16" style="padding-left: 0;padding-right: 0;">
             <SendBox v-if="isHidden" />
         </el-col>
+        <el-col :md="7" :sm="7" :xs="7"  style="width: 30%; "></el-col>
 
-        <span class="copyright">{{ new Date().getFullYear() }} © THChatUI made by HCQ.
-            <el-link href="https://github.com/Unagi-cq/THChatUI" target="_blank">{{ $t('AppFooter.repository')
+        <span class="copyright">{{ new Date().getFullYear() }} © BUPT.
+            <!-- <el-link href="https://github.com/Unagi-cq/BUPT" target="_blank">{{ $t('AppFooter.repository')
                 }}</el-link>
-            <el-link href="https://unagi-cq.github.io/THChatUI/#/docs" target="_blank">{{ $t('AppFooter.docs') }}</el-link>
+            <el-link href="https://unagi-cq.github.io/BUPT/#/docs" target="_blank">{{ $t('AppFooter.docs') }}</el-link> -->
         </span>
     </el-row>
 </template>

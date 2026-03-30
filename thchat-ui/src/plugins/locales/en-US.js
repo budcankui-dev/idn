@@ -138,7 +138,7 @@ export default {
   },
   AppMain: {
     title: "A Lightweight Web Session Management Solution for LLM",
-    welcome: "Hi friend! 🤖 Welcome to THChatUI. Github release page is not configured with a proxy, please visit the domestic mirror source for Ali, Baidu, and Volcano Ark platforms: http://localchatui.wuxitianyouqi.com/",
+    welcome: "Hi friend! 🤖 Welcome to BUPT. Github release page is not configured with a proxy, please visit the domestic mirror source for Ali, Baidu, and Volcano Ark platforms: http://localchatui.wuxitianyouqi.com/",
     viewDocs: "View Docs"
   },
   Kb: {

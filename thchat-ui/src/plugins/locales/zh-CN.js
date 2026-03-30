@@ -99,6 +99,7 @@ export default {
     copyMarkdownTooltip: "复制 Markdown",
     copyPlainTextTooltip: "复制纯文本",
     deleteConversationTooltip: "删除对话",
+    butifyConversationTooltip: "Json美化",
     characterCount: "字数统计: {count} 字符",
     notifications: {
       codeCopySuccess: "代码复制成功！",
@@ -137,8 +138,8 @@ export default {
     webSearch: "联网搜索"
   },
   AppMain: {
-    title: "LLM的轻量级Web会话管理方案",
-    welcome: "嗨喽~朋友！🤖 欢迎使用THChatUI。Github发布页未配置代理，阿里、百度、火山方舟平台体验请移步至国内镜像源：http://localchatui.wuxitianyouqi.com/",
+    title: "多模态智算网络路由意图解析",
+    welcome: "嗨喽~朋友！🤖 欢迎使用BUPT。此项目为解决非精确应用意图与多模态智算网络资源的优化适配问题，实现对用户意图解析及业务需求参数的提取，开展了基于大语言模型和思维链的意图解析框架研究。目前已部署大语言模型，利用其强大理解力精确感知用户意图，通过思维链技术，实现非专业、模糊或隐式表达的应用需求转化为精确需求参数与约束条件功能。下面对话即可开始意图解析。",
     viewDocs: "查看文档"
   },
   Kb: {

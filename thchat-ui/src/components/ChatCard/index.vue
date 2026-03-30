@@ -1,128 +1,160 @@
 <template>
     <div class="container">
         <!-- 用户消息 -->
-        <div class="user-message" v-show="query">
-            <div class="avatar-header">
-                <img class="avatar" :src="avatar_list.user" alt="User Avatar">
-                <span class="avatar-name">{{ $t('ChatCard.user_name') }}</span>
-            </div>
-            <p :class="{ 'collapse-p': !isExpanded }" ref="queryText">
-                {{ query }}
-            </p>
-            <div v-if="files && files.length > 0" class="uploaded-files">
-                <el-image v-for="x in files" style="width: 100px; height: 100px" :src="x.base64" :zoom-rate="1.2"
-                    :max-scale="7" :min-scale="0.2" :preview-src-list="files.map(file => file.base64)"
-                    :initial-index="0" fit="cover" />
-            </div>
-            <el-icon v-if="isTruncatable" @click="isExpanded = !isExpanded" class="collapse-icon">
-                <ArrowDown v-if="!isExpanded" />
-                <ArrowUp v-else />
-            </el-icon>
-        </div>
 
-        <div>
-            <!-- 机器人消息 -->
-            <div class="bot-message">
-                <!-- 头像 名称 -->
+            <div class="user-message" v-show="query">
                 <div class="avatar-header">
-                    <img v-if="avatar_list[series]" class="avatar" :src="avatar_list[series]" alt="Bot Avatar">
-                    <img v-else class="avatar" :src="avatar_list.local" alt="Default Bot Avatar">
-                    <span class="avatar-name">{{ modelName }}</span>
+                    <img class="avatar" :src="avatar_list.user" alt="User Avatar">
+                    <span class="avatar-name">{{ $t('ChatCard.user_name') }}</span>
                 </div>
-                <!-- 召回内容卡片 -->
-                <div v-if="recall && recall.length > 0" class="recall-content">
-                    <div class="recall-header">{{ $t('ChatCard.knowledge_base') }}</div>
-                    <div v-for="(item, index) in recall" :key="index" class="recall-item" 
-                        @click="toggleRecallItem(index)">
-                        <div class="recall-title">
-                            {{ item.filename }}
-                            <span class="recall-score">{{ $t('ChatCard.relevance_score', { score: (item.score * 100).toFixed(1) }) }}</span>
+                <p :class="{ 'collapse-p': !isExpanded }" ref="queryText">
+                    {{ query }}
+                </p>
+                <div v-if="files && files.length > 0" class="uploaded-files">
+                    <el-image v-for="x in files" style="width: 100px; height: 100px" :src="x.base64" :zoom-rate="1.2"
+                        :max-scale="7" :min-scale="0.2" :preview-src-list="files.map(file => file.base64)"
+                        :initial-index="0" fit="cover" />
+                </div>
+                <el-icon v-if="isTruncatable" @click="isExpanded = !isExpanded" class="collapse-icon">
+                    <ArrowDown v-if="!isExpanded" />
+                    <ArrowUp v-else />
+                </el-icon>
+            </div>
+
+            <div>
+                <!-- 机器人消息 -->
+                <div class="bot-message">
+                    <!-- 头像 名称 -->
+                    <div class="avatar-header">
+                        <img v-if="avatar_list[series]" class="avatar" :src="avatar_list[series]" alt="Bot Avatar">
+                        <img v-else class="avatar" :src="avatar_list.local" alt="Default Bot Avatar">
+                        <!--<span class="avatar-name">{{ modelName }}</span>-->
+                        <span class="avatar-name">意图解析</span>
+                    </div>
+                    <!-- 召回内容卡片 -->
+                    <div v-if="recall && recall.length > 0" class="recall-content">
+                        <div class="recall-header">{{ $t('ChatCard.knowledge_base') }}</div>
+                        <div v-for="(item, index) in recall" :key="index" class="recall-item"
+                            @click="toggleRecallItem(index)">
+                            <div class="recall-title">
+                                {{ item.filename }}
+                                <span class="recall-score">{{ $t('ChatCard.relevance_score', {
+                                    score: (item.score *
+                                    100).toFixed(1) }) }}</span>
+                            </div>
+                            <div class="recall-text" :class="{ 'recall-collapse': !expandedRecalls[index] }">{{
+                                item.content }}</div>
                         </div>
-                        <div class="recall-text" :class="{ 'recall-collapse': !expandedRecalls[index] }">{{ item.content }}</div>
+                    </div>
+                    <!-- 思考内容 -->
+                    <div v-if="reason" class="reason-content">
+                        <v-md-preview
+                            :text="'>**思考内容**\n' + reason.split('\n').map(line => `> ${line}`).join('\n')"></v-md-preview>
+                    </div>
+                    <!-- 回答内容 -->
+                    <v-md-preview :text="answer" @copy-code-success="handleCopyCodeSuccess"
+                        v-if="modelType === 'llm' || modelType === 'vim'"></v-md-preview>
+                    <!-- 图片生成 -->
+                    <div class="uploaded-files" v-if="modelType === 'igm'">
+                        <template v-if="answer">
+                            <el-image v-for="(image, index) in [answer]" :key="index"
+                                style="width: 100px; height: 100px" :src="image" :zoom-rate="1.2" :max-scale="7"
+                                :min-scale="0.2" :preview-src-list="[answer]" :initial-index="0" fit="cover" />
+                        </template>
+                        <el-skeleton animated variant="image" v-else>
+                            <template #template>
+                                <el-skeleton-item class="avatar" variant="image"
+                                    style="width: 100px; height: 100px; border-radius: 10px;" />
+                            </template>
+                        </el-skeleton>
                     </div>
                 </div>
-                <!-- 思考内容 -->
-                <div v-if="reason" class="reason-content">
-                    <v-md-preview :text="'>**思考内容**\n' + reason.split('\n').map(line => `> ${line}`).join('\n')"></v-md-preview>
+                <!-- 回答统计 -->
+                <div class="answer-stats" v-if="chat_detail && responseTime && finishTime">
+                    <el-tooltip :content="$t('ChatCard.copyMarkdownTooltip')" placement="bottom">
+                        <svg @click="copyMarkdown" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14"
+                            height="14" fill="none">
+                            <path
+                                d="M2.5 12C2.5 7.52166 2.5 5.28249 3.89124 3.89124C5.28249 2.5 7.52166 2.5 12 2.5C16.4783 2.5 18.7175 2.5 20.1088 3.89124C21.5 5.28249 21.5 7.52166 21.5 12C21.5 16.4783 21.5 18.7175 20.1088 20.1088C18.7175 21.5 16.4783 21.5 12 21.5C7.52166 21.5 5.28249 21.5 3.89124 20.1088C2.5 18.7175 2.5 16.4783 2.5 12Z"
+                                stroke="currentColor" stroke-width="1.5" />
+                            <path d="M11 7L17 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                            <path d="M7 7L8 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                            <path d="M7 12L8 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                            <path d="M7 17L8 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                            <path d="M11 12L17 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                            <path d="M11 17L17 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                        </svg>
+                    </el-tooltip>
+                    <el-tooltip :content="$t('ChatCard.copyPlainTextTooltip')" placement="bottom">
+                        <svg @click="copyPlainText" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14"
+                            height="14" fill="none">
+                            <path
+                                d="M9 15C9 12.1716 9 10.7574 9.87868 9.87868C10.7574 9 12.1716 9 15 9L16 9C18.8284 9 20.2426 9 21.1213 9.87868C22 10.7574 22 12.1716 22 15V16C22 18.8284 22 20.2426 21.1213 21.1213C20.2426 22 18.8284 22 16 22H15C12.1716 22 10.7574 22 9.87868 21.1213C9 20.2426 9 18.8284 9 16L9 15Z"
+                                stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                            <path
+                                d="M16.9999 9C16.9975 6.04291 16.9528 4.51121 16.092 3.46243C15.9258 3.25989 15.7401 3.07418 15.5376 2.90796C14.4312 2 12.7875 2 9.5 2C6.21252 2 4.56878 2 3.46243 2.90796C3.25989 3.07417 3.07418 3.25989 2.90796 3.46243C2 4.56878 2 6.21252 2 9.5C2 12.7875 2 14.4312 2.90796 15.5376C3.07417 15.7401 3.25989 15.9258 3.46243 16.092C4.51121 16.9528 6.04291 16.9975 9 16.9999"
+                                stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                    </el-tooltip>
+                    <el-tooltip :content="$t('ChatCard.deleteConversationTooltip')" placement="bottom">
+                        <svg @click="deleteQA" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14"
+                            height="14" fill="none">
+                            <path d="M14.9994 15L9 9M9.00064 15L15 9" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                            <path
+                                d="M22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12Z"
+                                stroke="currentColor" stroke-width="1.5" />
+                        </svg>
+                    </el-tooltip>
+                    <el-tooltip :content="$t('ChatCard.butifyConversationTooltip')" placement="bottom">
+                        <svg @click="onClickButify" @load="onLoadButify" xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24" width="14" height="14" fill="none">
+                            <path d="M4 14L9 19L20 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                    </el-tooltip>
+                    <span>{{ $t('ChatCard.characterCount', { count: answer.length }) }}</span>
+                    <span>{{ finishTime - responseTime }} ms</span>
                 </div>
-                <!-- 回答内容 -->   
-                <v-md-preview :text="answer" @copy-code-success="handleCopyCodeSuccess" v-if="modelType === 'llm' || modelType === 'vim'"></v-md-preview>
-                <!-- 图片生成 -->
-                <div class="uploaded-files" v-if="modelType === 'igm'">
-                    <template v-if="answer">
-                        <el-image v-for="(image, index) in [answer]" :key="index" style="width: 100px; height: 100px"
-                            :src="image" :zoom-rate="1.2" :max-scale="7" :min-scale="0.2" :preview-src-list="[answer]"
-                            :initial-index="0" fit="cover" />
-                    </template>
-                    <el-skeleton animated variant="image" v-else>
-                        <template #template>
-                            <el-skeleton-item class="avatar" variant="image" style="width: 100px; height: 100px; border-radius: 10px;" />
-                        </template>
-                    </el-skeleton>
+
+                <div class="answer-stats" v-else-if="chat_detail">
+                    <el-tooltip :content="$t('ChatCard.deleteConversationTooltip')" placement="bottom">
+                        <svg @click="deleteQA" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14"
+                            height="14" fill="none">
+                            <path d="M14.9994 15L9 9M9.00064 15L15 9" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                            <path
+                                d="M22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12Z"
+                                stroke="currentColor" stroke-width="1.5" />
+                        </svg>
+                    </el-tooltip>
                 </div>
             </div>
-            <!-- 回答统计 -->
-            <div class="answer-stats" v-if="chat_detail && responseTime && finishTime">
-                <el-tooltip :content="$t('ChatCard.copyMarkdownTooltip')" placement="bottom">
-                    <svg @click="copyMarkdown" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14"
-                        height="14" fill="none">
-                        <path
-                            d="M2.5 12C2.5 7.52166 2.5 5.28249 3.89124 3.89124C5.28249 2.5 7.52166 2.5 12 2.5C16.4783 2.5 18.7175 2.5 20.1088 3.89124C21.5 5.28249 21.5 7.52166 21.5 12C21.5 16.4783 21.5 18.7175 20.1088 20.1088C18.7175 21.5 16.4783 21.5 12 21.5C7.52166 21.5 5.28249 21.5 3.89124 20.1088C2.5 18.7175 2.5 16.4783 2.5 12Z"
-                            stroke="currentColor" stroke-width="1.5" />
-                        <path d="M11 7L17 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                        <path d="M7 7L8 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                        <path d="M7 12L8 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                        <path d="M7 17L8 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                        <path d="M11 12L17 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                        <path d="M11 17L17 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                    </svg>
-                </el-tooltip>
-                <el-tooltip :content="$t('ChatCard.copyPlainTextTooltip')" placement="bottom">
-                    <svg @click="copyPlainText" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14"
-                        height="14" fill="none">
-                        <path
-                            d="M9 15C9 12.1716 9 10.7574 9.87868 9.87868C10.7574 9 12.1716 9 15 9L16 9C18.8284 9 20.2426 9 21.1213 9.87868C22 10.7574 22 12.1716 22 15V16C22 18.8284 22 20.2426 21.1213 21.1213C20.2426 22 18.8284 22 16 22H15C12.1716 22 10.7574 22 9.87868 21.1213C9 20.2426 9 18.8284 9 16L9 15Z"
-                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                        <path
-                            d="M16.9999 9C16.9975 6.04291 16.9528 4.51121 16.092 3.46243C15.9258 3.25989 15.7401 3.07418 15.5376 2.90796C14.4312 2 12.7875 2 9.5 2C6.21252 2 4.56878 2 3.46243 2.90796C3.25989 3.07417 3.07418 3.25989 2.90796 3.46243C2 4.56878 2 6.21252 2 9.5C2 12.7875 2 14.4312 2.90796 15.5376C3.07417 15.7401 3.25989 15.9258 3.46243 16.092C4.51121 16.9528 6.04291 16.9975 9 16.9999"
-                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                </el-tooltip>
-                <el-tooltip :content="$t('ChatCard.deleteConversationTooltip')" placement="bottom">
-                    <svg @click="deleteQA" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
-                        fill="none">
-                        <path d="M14.9994 15L9 9M9.00064 15L15 9" stroke="currentColor" stroke-width="1.5"
-                            stroke-linecap="round" stroke-linejoin="round" />
-                        <path
-                            d="M22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12Z"
-                            stroke="currentColor" stroke-width="1.5" />
-                    </svg>
-                </el-tooltip>
-                <span>{{ $t('ChatCard.characterCount', { count: answer.length }) }}</span>
-                <span>{{ finishTime - responseTime }} ms</span>
-            </div>
-            <div class="answer-stats" v-else-if="chat_detail">
-                <el-tooltip :content="$t('ChatCard.deleteConversationTooltip')" placement="bottom">
-                    <svg @click="deleteQA" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
-                        fill="none">
-                        <path d="M14.9994 15L9 9M9.00064 15L15 9" stroke="currentColor" stroke-width="1.5"
-                            stroke-linecap="round" stroke-linejoin="round" />
-                        <path
-                            d="M22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12Z"
-                            stroke="currentColor" stroke-width="1.5" />
-                    </svg>
-                </el-tooltip>
+    </div>
+
+    <!-- ILOVEU -->
+    <teleport to="body">
+        <div v-if="showJson" class="json-overlay" ref="jsonOverlay" @click="handleOverlayClick">
+            <div class="json-container" @click.stop>
+                <json-viewer :json-data="jsonData" />
             </div>
         </div>
-    </div>
+    </teleport>
+    <!-- ILOVEU -->
 </template>
 
 <script>
 import { marked } from 'marked';
 import chatStoreHelper from '@/schema/chatStoreHelper';
+// ILOVEU
+import JsonViewer from '@/components/ChatCard/JsonViewer.vue';
 
 export default {
     name: 'ChatCard',
+    components: { JsonViewer },
+    // ILOVEU
     data() {
         return {
             // 是否展开
@@ -133,6 +165,11 @@ export default {
             isTruncatable: false,
             // 召回内容是否可折叠
             expandedRecalls: [],
+            // JSON数据 ILOVEU
+            showJson: false, // Initially false, enable via onClickButify ILOVEU
+            jsonData: {}, // Placeholder for JSON data ILOVEU
+            // Pending: 添加 observer 用于存储 MutationObserver 实例
+            observer: null,
         }
     },
     props: {
@@ -186,6 +223,11 @@ export default {
             if (queryTextElement.scrollHeight > this.maxHeight) {
                 this.isTruncatable = true;
             }
+            //ILOVEU
+            console.log('Mounted - showJson:', this.showJson);
+            console.log('Mounted - jsonOverlay:', this.$refs.jsonOverlay);
+
+
         });
     },
     methods: {
@@ -270,7 +312,125 @@ export default {
         deleteQA() {
             chatStoreHelper.delQA(this.$store.state.app.active, this.qaId);
         },
+        /**
+         * 美化json数据
+         */
+        // async onClickButify(){
+        //     //alert("Butify!");
+        //     console.log("Clicked");
+        //     // 获取页面中所有的 <code> 标签
+        //     const codeTags = document.querySelectorAll('code');
+        //     // 检查是否存在 <code> 标签
+        //     if (codeTags.length > 0) {
+        //         // 获取最后一个 <code> 标签的内容 里面是Json数据
+        //         const lastJson = codeTags[codeTags.length - 1].textContent;
+        //         console.log(lastJson); // 打印内容
+        //         // alert(lastJson);
+        //         // alert(btoa(encodeURIComponent(lastJson)));// 解决中文问题
+        //         console.log(btoa(encodeURIComponent(lastJson)));
+        //     } else {
+        //         console.log('页面中没有找到 <code> 标签');
+        //     }
+        //     // 检查JSON
 
+        //     // 传入lastJson到美化的Json展示的vue组件,显示美化的Json数据
+        //     this.jsonData = JSON.parse(lastJson);
+        //     this.showJson = true; // 显示 JsonViewer
+        //     console.log("AAAAAAAAA"+lastJson);
+        // },
+        onClickButify() {
+            console.log('Clicked');
+            // 获取页面中所有的 <code> 标签
+            const codeTags = document.querySelectorAll('code');
+            // 检查是否存在 <code> 标签
+            if (codeTags.length > 0) {
+                // 获取最后一个 <code> 标签的内容 里面是Json数据
+                let lastJson = codeTags[codeTags.length - 1].textContent;
+                // 使用正则表达式替换所有匹配的内容
+                lastJson = lastJson.replace("modality_info", "模态信息");
+                lastJson = lastJson.replace("ip_info", "地址信息");
+                lastJson = lastJson.replace("network_qos_constraints", "网络约束");
+                lastJson = lastJson.replace("computational_constraints", "算力约束");
+                lastJson = lastJson.replace("storage_constraints", "存储约束");
+                lastJson = lastJson.replace("source_ip", "源IP");
+                lastJson = lastJson.replace("destination_ip", "目的IP");
+                lastJson = lastJson.replace("modality", "模态类型");
+                lastJson = lastJson.replace("method", "路径计算方案");
+                lastJson = lastJson.replace("status", "解析状态");
+                lastJson = lastJson.replace("bandwidth_requirement", "带宽约束");
+                lastJson = lastJson.replace("latency_requirement", "延迟约束");
+                lastJson = lastJson.replace("loss_requirement", "丢包率约束");
+                lastJson = lastJson.replace("burst_rate_requirement", "突发度约束");
+                lastJson = lastJson.replace("cpu_power", "CPU约束");
+                lastJson = lastJson.replace("gpu_power", "GPU约束");
+                lastJson = lastJson.replace("storage_capacity", "存储容量约束");
+                lastJson = lastJson.replace("storage_performance", "读写速度约束");
+                lastJson = lastJson.replace("tag", "流量标签");
+                console.log('Last JSON:', lastJson);
+                console.log('Encoded:', btoa(encodeURIComponent(lastJson)));
+                try {
+                    this.jsonData = JSON.parse(lastJson);
+                    this.showJson = true; // 显示 JsonViewer vue
+                    console.log('Updated jsonData:', this.jsonData);
+                    console.log('showJson:', this.showJson);
+                } catch (error) {
+                    console.error('JSON 解析错误:', error);
+                    this.$notify({
+                        title: 'JSON 解析失败',
+                        message: error.message,
+                        type: 'error',
+                    });
+                }
+            } else {
+                console.log('页面中没有找到 <code> 标签');
+                this.$notify({
+                    title: '无 JSON 数据',
+                    message: '未完整意图解析工作,请提供更详尽的信息',
+                    type: 'warning',
+                });
+            }
+        },
+        // onLoadButify(){
+        //     console.log('loaded');
+        //     // 获取页面中所有的 <code> 标签
+        //     const codeTags = document.querySelectorAll('code');
+        //     // 检查是否存在 <code> 标签
+        //     if (codeTags.length > 0) {
+        //         // 获取最后一个 <code> 标签的内容 里面是Json数据
+        //         const lastJson = codeTags[codeTags.length - 1].textContent;
+        //         console.log('Last JSON:', lastJson);
+        //         console.log('Encoded:', btoa(encodeURIComponent(lastJson)));
+        //         try {
+        //             this.jsonData = JSON.parse(lastJson);
+        //             this.showJson = true; // 显示 JsonViewer
+        //             console.log('Updated jsonData:', this.jsonData);
+        //             console.log('showJson:', this.showJson);
+        //         } catch (error) {
+        //             console.error('JSON 解析错误:', error);
+        //             this.$notify({
+        //                 title: 'JSON 解析失败',
+        //                 message: error.message,
+        //                 type: 'error',
+        //             });
+        //         }
+        //     } else {
+        //         console.log('页面中没有找到 <code> 标签');
+        //         this.$notify({
+        //             title: '无 JSON 数据',
+        //             message: '页面中未找到 <code> 标签',
+        //             type: 'warning',
+        //         });
+        //     }
+        // },
+        /**
+         * 测试 取消JSON的数据显示
+         */
+        handleOverlayClick(event) {
+            if (event.target.classList.contains('json-overlay')) {
+                console.log('Clicked outside json, hiding json');
+                this.showJson = false;
+            }
+        },
         /**
          * 切换单个recall项的展开状态
          */
@@ -288,6 +448,7 @@ export default {
         }
     }
 }
+
 </script>
 
 <style lang="scss" scoped>
@@ -341,7 +502,7 @@ export default {
 }
 
 /**
- * Markdown预览区域样式
+ * Markdown预览区域样式 ILOVEU
  */
 :deep(.v-md-editor-preview) {
     width: 100%;
@@ -371,11 +532,11 @@ export default {
 }
 
 /**
- * 消息文本的基本样式
+ * 消息文本的基本样式 ILOVEU
  */
 .user-message p,
 :deep(.vuepress-markdown-body) {
-    font-size: 13px;
+    font-size: 23px;
     color: var(--common-color);
     background: none;
     word-wrap: break-word;
@@ -434,6 +595,7 @@ export default {
  * 折叠相关样式
  */
 .collapse {
+
     // 折叠段落
     &-p {
         display: -webkit-box;
@@ -474,6 +636,7 @@ export default {
  * 召回内容相关样式
  */
 .recall {
+
     // 召回内容容器
     &-content {
         margin: 8px 0 0 0;
@@ -535,6 +698,38 @@ export default {
         -webkit-box-orient: vertical;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+}
+</style>
+
+<style scoped>
+.json-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.json-container {
+    background: #1e1e1e;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 80vw;
+    max-height: 80vh;
+    overflow: auto;
+    /* 隐藏滚动条但保持滚动功能 */
+    /* Firefox */
+    scrollbar-width: none;
+
+    /* Chrome, Safari, Edge */
+    &::-webkit-scrollbar {
+        display: none;
     }
 }
 </style>

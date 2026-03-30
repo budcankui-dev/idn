@@ -2,7 +2,7 @@
 
 ## 简介
 
-THChatUI V2.0.0是一个专为**数据敏感型个人/组织/公司**设计的**开源大模型对话WebUI**，基于Vue和Element Plus开发，可简便快捷的接入本地大模型，保护信息安全。本项目基于Apache 2.0协议开源。
+BUPT V2.0.0是一个专为**数据敏感型个人/组织/公司**设计的**开源大模型对话WebUI**，基于Vue和Element Plus开发，可简便快捷的接入本地大模型，保护信息安全。本项目基于Apache 2.0协议开源。
 
 前端采用Vue更适合中国宝宝体质~
 
@@ -53,20 +53,20 @@ THChatUI V2.0.0是一个专为**数据敏感型个人/组织/公司**设计的**
 
 PC端界面如下：
 
-<img src="https://i.miji.bid/2025/01/12/1bb5f241e49587fd1129dfa81f596939.png" alt="THChatUI" align="middle" width="800" />
+<img src="https://i.miji.bid/2025/01/12/1bb5f241e49587fd1129dfa81f596939.png" alt="BUPT" align="middle" width="800" />
 
 移动端界面如下：
 
-<img src="https://i.miji.bid/2025/01/12/a4ebf4e86a9dfd410aa8432639414ac7.png" alt="THChatUI" align="middle" height="400" />
+<img src="https://i.miji.bid/2025/01/12/a4ebf4e86a9dfd410aa8432639414ac7.png" alt="BUPT" align="middle" height="400" />
 
 
 ### 在线体验与代码仓库
 
 [THChatUI国内加速体验地址](http://localchatui.wuxitianyouqi.com/#/)
-[THChatUI永久体验地址](https://unagi-cq.github.io/THChatUI/#/)
+[THChatUI永久体验地址](https://unagi-cq.github.io/BUPT/#/)
 > 【注】THChatUI在线体验版只提供了讯飞星火Lite模型调用，阿里云灵积、智谱AI平台、百度千帆、月之暗面、OpenAI的模型调用需要去对应平台申请Key并填入设置中，Key只会保存在本地浏览器缓存中，绝对安全。
 
-[THChatUI代码仓库](https://github.com/Unagi-cq/THChatUI)
+[THChatUI代码仓库](https://github.com/Unagi-cq/BUPT)
 > 【注】代码仓提供了前端项目和后端接口示例。
 
 [THChatUI代码视频讲解教程](https://www.bilibili.com/video/BV1xTcVezEKP/)

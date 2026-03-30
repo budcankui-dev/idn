@@ -15,6 +15,7 @@ import plugins from './plugins' // 引入第三方的插件或组件
 import components from "@/components"  // 引入自定义的组件
 import '@/assets/styles/index.scss' // 全局css
 
+
 const app = createApp(App)
 
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
@@ -24,6 +25,10 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 // 全局方法挂载
 app.config.globalProperties.$notify = ElNotification;
 app.config.globalProperties.$imageViewer = ElImageViewer;
+
+// Pending: 添加全局标志用于控制 alert 只触发一次
+app.config.globalProperties.$hasAlerted = false;
+
 
 app.use(plugins)
     .use(components)

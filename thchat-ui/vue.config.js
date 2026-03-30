@@ -2,10 +2,11 @@ const { defineConfig } = require('@vue/cli-service')
 module.exports = defineConfig({
   // github action打包之后 访问的资源路径以仓库名开头 因此这里要做一下区分
   publicPath: process.env.DEPLOY_ENV === 'GH_PAGES'
-    ? '/THChatUI/'
+    ? '/BUPT/'
     : '/',
   transpileDependencies: true,
   devServer: {
+    allowedHosts: "all",
     client: {
       overlay: false // 禁用错误覆盖层
     },
