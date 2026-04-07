@@ -16,14 +16,14 @@
                                 <div class="title-container" v-if="is_show">
                                     <div class="title-line">{{ $t('AppMain.title') }} <span>BUPT</span></div>
                                     <div class="sub-title-line">{{ $t('AppMain.welcome') }}</div>
-                                    <div class="sub-title-line">例如：我计划进行视联网任务的部署，源IP为从192.168.5.3目的IP为192.65.36.25。
+                                    <div class="sub-title-line">例如：我想部署视频AI推理业务。
                                     </div>
-                                    <div class="sub-title-line">
+                                    <!-- <div class="sub-title-line">
                                         <el-link type="primary" href="https://unagi-cq.github.io/BUPT/#/docs"
                                             @click="goTo('/about')">
                                             {{ $t('AppMain.viewDocs') }}
                                         </el-link>
-                                    </div>
+                                    </div> -->
                                 </div>
                             </el-col>
 
@@ -36,59 +36,53 @@
                 </el-col>
             </el-row>
         </el-main>
-        <el-aside v-if="!is_show" width="30%" style="  padding-top: 20px; border-left: 1px solid #999; ">
-            <el-cotainer style="display: flex; flex-direction: column; height: 100%; width: 100%; align-items: center;">
+        <el-aside  width="30%" style="  padding-top: 20px; border-left: 1px solid #999; ">
+            <el-container style="display: flex; flex-direction: column; height: 100%; width: 100%; align-items: center;">
                 <el-main style="padding: 0; display: flex; flex-direction: column; width: 100%; ">
-                    <!-- <el-space direction="vertical" :size="30" style="width: 100%;">
-                        <el-tag type="primary" style="font-size: 24px; font-weight: bold;" size="large">
-                            智算业务id： job_001 
-                        </el-tag>
-                       
-                        <el-tag type="primary" style="font-size: 24px; font-weight: bold;" size="large">
-                            意图解析结果
-                        </el-tag>
 
-                        <v-md-preview :text="previewText"></v-md-preview>
-
-
-                        <el-tag type="primary" style="font-size: 24px; font-weight: bold; " size="large">
-                            任务DAG
-                        </el-tag>
-
-                        <v-md-preview :text="previewText"></v-md-preview>
-                    </el-space> -->
-
-                    <el-space direction="vertical" :size="30" style="width: 100%; ">
+                    <el-space direction="vertical" :size="30" style="max-width: 100%; ">
                         <!-- 智算业务id -->
                         <!-- <div class="card"> -->
-                        <el-tag type="primary" size="large" class="card-header">
-                            智算业务id： {{ active }}
+                        <el-tag type="primary" size="large" class="card-header" >
+                            智算业务id： {{ active ?active:"暂未开始解析"}}
                         </el-tag>
                         <!-- </div> -->
 
                         <!-- 意图解析结果 -->
-                        <div class="card">
+                        <div class="card"   >
                             <el-tag type="info" class="card-header">
                                 意图解析结果
+                    
                             </el-tag>
-                            <v-md-preview :text="previewText" class="card-body"></v-md-preview>
+            
+                            <v-md-preview   v-if="showIntentPreview && active"  :key="sessionStateIntentText"  :text="sessionStateIntentText" class="card-body"></v-md-preview>
                         </div>
 
                         <!-- 任务DAG -->
                         <div class="card">
                             <el-tag type="warning" class="card-header">
                                 任务DAG
+                
                             </el-tag>
-                            <v-md-preview :text="previewText" class="card-body"></v-md-preview>
+                            <v-md-preview    v-if="showDagPreview && active" :key="sessionStateDagText"   :text="sessionStateDagText" class="card-body"></v-md-preview>
                         </div>
                     </el-space>
                 </el-main>
 
                 <el-footer
                     style="text-align: center; width: 100%; border-top: 1px solid #999; display: flex;justify-content: center; align-items: center;">
-                    <el-button :style="{ width: '100px' }" type="primary">提交</el-button>
+                   
+                    <el-button 
+                        :style="{ width: '100px' }" 
+                        type="primary" 
+                        :disabled="!canSubmit || isSubmitted|| isSubmitting"
+                        :loading="isSubmitting"
+                        @click="onClickSubmit">
+                        {{ isSubmitted ? '已提交' : '提交' }}
+                       
+                    </el-button>
                 </el-footer>
-            </el-cotainer>
+            </el-container>
 
         </el-aside>
     </el-container>
@@ -98,16 +92,25 @@
 </template>
 
 <script>
-import loadLive2d from 'live2d-helper'
 
+import { nextTick, ref, computed } from 'vue'
+import loadLive2d from 'live2d-helper'
+import chatStoreHelper from '@/schema/chatStoreHelper'
+import { MdPreview } from 'md-editor-v3';
 export default {
     name: 'AppMain',
+    components: { MdPreview },
     data() {
         return {
-            previewText: '```json\n{"business_type": "视频AI推理"}\n```',
+            
             isLive2dLoading: false,
             live2dError: null,
-            live2dInstance: null  // 添加实例引用
+            live2dInstance: null,  // 添加实例引用
+            isSubmitted: false,  // 是否已提交
+            isSubmitting: false  ,// 是否正在提交
+             showIntentPreview: true,
+      showDagPreview: true,
+
         }
     },
     computed: {
@@ -115,8 +118,26 @@ export default {
         active() {
             return this.$store.state.app.active;
         },
+        sessionStateIntentText() {
+            const activeSession = this.$store.state.app.chat.findSession(this.active);
+            // const state=
+            // console.log('计算属性 sessionStateIntentText 重新计算，active:', this.active, 'sessionState.intent_result:', activeSession.state.intent_result);
+             return `\`\`\`json\n${JSON.stringify( activeSession?.state?.intent_result|| {},null,2)}\n\`\`\``;
+  },
+    sessionStateDagText() {
+        const activeSession = this.$store.state.app.chat.findSession(this.active);
+      return `\`\`\`json\n${JSON.stringify( activeSession?.state?.dag|| {}, null, 2)}\n\`\`\``
+    },
+        sessionState(){
+            
+            const activeSession = this.$store.state.app.chat.findSession(this.active);
+            // console.log('计算属性 aactiveSession?.state 重新计算，active:', this.active, 'sessionState:', activeSession?.state);
+            return activeSession ? { ...activeSession.state } : {};
+            // return activeSession?toRaw(activeSession.state)  : {};
+        },
         // 激活会话的QA对
         active_session_qa_data() {
+            // console.log('计算属性 active_session_qa_data 重新计算，active:', this.active);
             const activeSession = this.$store.state.app.chat.findSession(this.active);
             return activeSession?.data || [];
         },
@@ -131,9 +152,33 @@ export default {
         // 当前看板娘模型
         currentLive2dModel() {
             return this.$store.state.setting.live2d_model || null;
+        },
+        // 当前激活的会话对象
+        activeSession() {
+            return this.$store.state.app.chat.findSession(this.active);
+        },
+        // 提交按钮是否可用：workflow===\"dag\" 且未提交过
+        canSubmit() {
+            const activeSession = this.$store.state.app.chat.findSession(this.active);
+            // const sessionState = activeSession?.sessionState;
+            
+            return  this.active && this.active !== "" && activeSession?.state?.workflow === 'dag' ;
         }
+
     },
     methods: {
+        refreshIntentPreview() {
+      this.showIntentPreview = false
+      nextTick(() => {
+        this.showIntentPreview = true
+      })
+    },
+    refreshDagPreview() {
+      this.showDagPreview = false
+      nextTick(() => {
+        this.showDagPreview = true
+      })
+    },
         // 统一处理滚动
         scrollToBottom() {
             this.$nextTick(() => {
@@ -178,6 +223,57 @@ export default {
             }
         },
         /**
+         * 提交会话到后端
+         */
+        async onClickSubmit() {
+            console.log('onClickSubmit called'); // 添加调试日志
+            if (!this.canSubmit) {
+                this.$message.warning('当前会话无法提交，请检查状态');
+                return;
+            }
+
+            this.isSubmitting = true;
+            try {
+                const submitData = {
+                    session_id: String(this.active),
+                    business: this.sessionState?.intent_result?.["业务类型"] || 'default',
+                    prompt: "",
+                    history: this.activeSession?.data || [],
+                    state: this.sessionState || {},
+                    params: this.sessionState?.intent_result || {},
+                    dag: this.sessionState?.dag || {}
+                };
+                console.log('Submitting data:', submitData); // 添加调试日志
+
+                const response = await fetch('local/session/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(submitData)
+                });
+                // console.log('Response received:', response); // 添加调试日志
+                if (!response.ok) {
+                    if (response.status === 400) {
+                         this.isSubmitted=true; // 标记为已提交，防止重复提交
+                         this.$message.success(`已提提交，请勿重复提交`);
+                         return
+                    }else{
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                }
+
+                const result = await response.json();
+                this.isSubmitted = true;
+                this.$message.success(`会话已提交成功！ID: ${result.session_id}`);
+            } catch (error) {
+                console.log('提交失败:', error);
+                this.$message.error(`提交失败: ${error.message}`);
+            } finally {
+                this.isSubmitting = false;
+            }
+        },
+        /**
          * 跳转页面函数
          * @param path
          */
@@ -193,14 +289,30 @@ export default {
                 if (isAtBottom) {
                     this.scrollToBottom();
                 }
+                // 当 chat store 变化时，强制更新以确保 canSubmit 重新计算
+                this.$nextTick(() => {
+                    this.$forceUpdate();
+                });
             }
         },
         "$store.state.app.active": {
             deep: true,
             handler: function () {
                 this.scrollToBottom();
+                // console.log('Active session changed:', this.active);
+                // 切换会话时重置提交状态
+               this.isSubmitted = false;
             }
         },
+        sessionState: {
+        deep: true,
+        handler(newVal) {
+            // console.log('State changed', newVal);
+            // 确保 text 变化后，key 也随之改变
+            this.refreshIntentPreview();
+            this.refreshDagPreview();
+        }
+    },
         query() {
             this.scrollToBottom();
         },
@@ -240,13 +352,14 @@ export default {
 }
 
 .card-header {
+    // width: 50%;
     font-size: 20px;
     font-weight: bold;
     // padding: 10px 20px;
     border-radius: 4px;
     color: rgba(53, 49, 111, 0.704);
     // margin-bottom: 12px;
-    display: inline-block;
+    display: block;
 }
 
 .card-header[type="success"] {
@@ -265,8 +378,9 @@ export default {
 }
 
 .card-body {
+
     background-color: #f5f5f5;
-    padding: 20px;
+    padding: 2px;
     border-radius: 4px;
     border: 1px solid #e0e0e0;
 }

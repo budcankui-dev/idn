@@ -20,7 +20,7 @@ const API_URLS = {
  * @param onerror 处理错误时的回调函数
  * @returns {Promise<void>}
  */
-export async function fetchAPI({prompt, history, files, controller, onopen, onmessage, onclose, onerror}) {
+export async function fetchAPI({state,prompt, history, files, controller, onopen, onmessage, onclose, onerror}) {
     const { setting } = store.state;
     const { model_config, web_search_enabled } = setting;
     const { version, pre_method, type, can_web_search } = model_config;
@@ -48,6 +48,14 @@ export async function fetchAPI({prompt, history, files, controller, onopen, onme
             return;
         }
     }
+    let body={state:state}
+    let {input}=preProcess(version, prompt, history, pre_method, files, false)
+   
+    const { prompt: p, history: h, files: f} = input;
+    
+
+    body={...body,prompt:p,history:h,files:f}
+    console.log("body",body)
 
     const response = await fetchEventSource(url, {
         method: 'POST',
@@ -55,7 +63,7 @@ export async function fetchAPI({prompt, history, files, controller, onopen, onme
             'Content-Type': 'application/json',
             'Accept':'text/event-stream'
         },
-        body: JSON.stringify(preProcess(version, prompt, history, pre_method, files, is_search)),
+        body: JSON.stringify(body),
         signal: controller.signal,
         // 连接成功时的处理
         onopen,

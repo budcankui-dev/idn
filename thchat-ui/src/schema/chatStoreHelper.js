@@ -44,8 +44,10 @@ export default {
         if (session) {
             let existingQA = session.data.find(item => item.qaId === qa.qaId);
             if (existingQA) {
+                
                 // 如果找到相同id的QA,替换它
                 let index = session.data.indexOf(existingQA);
+               
                 // 创建新的数组以触发响应式更新
                 session.data = [
                     ...session.data.slice(0, index),
@@ -59,5 +61,49 @@ export default {
             // 创建新的chat对象以触发响应式更新
             store.dispatch('setChat', Object.assign({}, chat));
         }
+    },
+
+    setSessionState(sessionId, state) {
+        let chat = store.state.app.chat;
+        let session = chat.findSession(sessionId);
+        if (session) {
+     
+            // session.state=state
+                // session_id: str = ""
+                // type: str = "state"
+                // stage: str = "intent_parsing"
+                // workflow: str = "intent_parsing"
+                // parse_success: bool = False
+                // missing_params: list = []
+                // reason_params: list = []
+                // intent_result: dict = {}
+                // dag: dict = {}
+                // code:int =0
+                // msg:str = ""
+            session.state = {
+            // ...state,
+            session_id: String(sessionId),
+             intent_result: { ...state.intent_result }, // 保证深层响应式触发
+             dag: { ...state.dag },
+             type: "state",
+             stage: state.stage ,
+             workflow: state.workflow ,
+             parse_success: state.parse_success ,
+             missing_params: state.missing_params ,
+             reason_params: state.reason_params ,
+             code: state.code ,
+             msg: state.msg 
+            };
+            // session.state = { ...state }; 
+            // session.state.session_id=String(sessionId)
+             // 创建新的chat对象以触发响应式更新
+            store.dispatch('setChat', Object.assign({}, chat));
+            
+        }
+    },
+    getSession(sessionId){
+        let chat = store.state.app.chat;
+        let session = chat.findSession(sessionId);
+        return session
     }
 }

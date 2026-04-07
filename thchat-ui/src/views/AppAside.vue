@@ -181,6 +181,7 @@ export default {
                 this.goToPage('/');
             }
             // 更新active
+            console.log("uuid",uuid)
             this.active = uuid;
             // 在手机模式下,触发收起侧边栏
             if (this.isMobileDevice()) {

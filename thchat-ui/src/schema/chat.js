@@ -38,8 +38,11 @@ class Session {
      * @param {string} sessionId - 会话的唯一标识符
      * @param {Array} [data=[]] - 会话中的问答数据数组
      */
-    constructor(sessionId, data = []) {
+    constructor(sessionId, 
+        data = [],state) {
         this.sessionId = sessionId;
+        this.state=state
+   
         this.data = data.map(qa => {
             return qa instanceof QA ? qa : new QA(
                 qa.qaId,
@@ -112,7 +115,7 @@ class Chat {
 		}
 
         this.list = list.map(session => {
-            return session instanceof Session ? session : new Session(session.sessionId, session.data);
+            return session instanceof Session ? session : new Session(session.sessionId, session.data,session.state);
         });
     }
 

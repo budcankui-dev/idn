@@ -146,7 +146,6 @@
 </template>
 
 <script>
-import { marked } from 'marked';
 import chatStoreHelper from '@/schema/chatStoreHelper';
 // ILOVEU
 import JsonViewer from '@/components/ChatCard/JsonViewer.vue';

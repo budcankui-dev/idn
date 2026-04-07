@@ -1,91 +1,46 @@
 <template>
     <div class="search-container">
         <!-- 输入框 -->
-        <el-input
-            :placeholder="$t('SendBox.placeholder')"
-            v-model="query"
-            :autosize="{ minRows: 1, maxRows: 8 }"
-            resize="none"
-            @keydown.enter="onEnterKeyDown"
-            @keydown.up="onEnterKeyUp"
-            type="textarea"
-            :class="{ 'has-files': uploadedFiles.length > 0 }"
-        ></el-input>
+         <!-- @input="forceUpdate($event)" -->
+        <el-input :placeholder="$t('SendBox.placeholder')" ref="queryInput"  v-model="this.query" 
+            :autosize="{ minRows: 1, maxRows: 8 }" resize="none" @keydown.enter="onEnterKeyDown" @input="forceUpdate($event)" 
+            @keydown.up="onEnterKeyUp" type="textarea" :class="{ 'has-files': uploadedFiles.length > 0 }"></el-input>
 
         <div class="left-icons" v-if="uploadedFiles.length === 0">
             <!-- 上传图标 -->
-            <el-upload
-                class="upload-icon"
-                action=""
-                :show-file-list="false"
-                :auto-upload="false"
-                accept="image/*"
-                :multiple="false"
-                :on-change="handleImageUpload"
-                :limit="upload_limit"
-                :disabled="uploadedFiles.length >= upload_limit"
-            >
+            <el-upload class="upload-icon" action="" :show-file-list="false" :auto-upload="false" accept="image/*"
+                :multiple="false" :on-change="handleImageUpload" :limit="upload_limit"
+                :disabled="uploadedFiles.length >= upload_limit">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none">
                     <path
                         d="M6.93745 10C6.24652 10.0051 5.83076 10.0263 5.4996 10.114C3.99238 10.5131 2.96048 11.8639 3.00111 13.3847C3.01288 13.8252 3.18057 14.3696 3.51595 15.4585C4.32309 18.079 5.67958 20.3539 8.7184 20.8997C9.27699 21 9.90556 21 11.1627 21L12.8372 21C14.0943 21 14.7229 21 15.2815 20.8997C18.3203 20.3539 19.6768 18.079 20.4839 15.4585C20.8193 14.3696 20.987 13.8252 20.9988 13.3847C21.0394 11.8639 20.0075 10.5131 18.5003 10.114C18.1691 10.0263 17.7534 10.0051 17.0625 10"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                    />
+                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                     <path
                         d="M12 3L12 14M12 3C12.4683 3 12.8243 3.4381 13.5364 4.3143L14.5 5.5M12 3C11.5316 3 11.1756 3.4381 10.4635 4.3143L9.49995 5.5"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    />
+                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
             </el-upload>
             <!-- 知识库图标 -->
-            <div
-                class="web-search-icon-wrapper"
-                :class="{ 'selected': knowledgeEnabled }"
-                @click="knowledgeEnabled = !knowledgeEnabled"
-            >
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    class="rag"
-                >
+            <div class="web-search-icon-wrapper" :class="{ 'selected': knowledgeEnabled }"
+                @click="knowledgeEnabled = !knowledgeEnabled">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none"
+                    class="rag">
                     <path
                         d="M8.85746 12.5061C6.36901 10.6456 4.59564 8.59915 3.62734 7.44867C3.3276 7.09253 3.22938 6.8319 3.17033 6.3728C2.96811 4.8008 2.86701 4.0148 3.32795 3.5074C3.7889 3 4.60404 3 6.23433 3H17.7657C19.396 3 20.2111 3 20.672 3.5074C21.133 4.0148 21.0319 4.8008 20.8297 6.37281C20.7706 6.83191 20.6724 7.09254 20.3726 7.44867C19.403 8.60062 17.6261 10.6507 15.1326 12.5135C14.907 12.6821 14.7583 12.9567 14.7307 13.2614C14.4837 15.992 14.2559 17.4876 14.1141 18.2442C13.8853 19.4657 12.1532 20.2006 11.226 20.8563C10.6741 21.2466 10.0043 20.782 9.93278 20.1778C9.79643 19.0261 9.53961 16.6864 9.25927 13.2614C9.23409 12.9539 9.08486 12.6761 8.85746 12.5061Z"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    />
+                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
                 <span v-if="knowledgeEnabled" class="search-text rag">{{ selectedRepo?.name }}</span>
             </div>
             <!-- 联网图标 -->
-            <div
-                class="web-search-icon-wrapper"
-                :class="{ 'selected': webSearchEnabled }"
-                @click="webSearchEnabled = !webSearchEnabled"
-            >
+            <div class="web-search-icon-wrapper" :class="{ 'selected': webSearchEnabled }"
+                @click="webSearchEnabled = !webSearchEnabled">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none">
                     <path
                         d="M8.9835 1.99998C6.17689 2.06393 4.53758 2.33109 3.41752 3.44727C2.43723 4.42416 2.10954 5.79742 2 7.99998M15.0165 1.99998C17.8231 2.06393 19.4624 2.33109 20.5825 3.44727C21.5628 4.42416 21.8905 5.79742 22 7.99998M15.0165 22C17.8231 21.9361 19.4624 21.6689 20.5825 20.5527C21.5628 19.5758 21.8905 18.2026 22 16M8.9835 22C6.17689 21.9361 4.53758 21.6689 3.41752 20.5527C2.43723 19.5758 2.10954 18.2026 2 16"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    />
+                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                     <path
                         d="M15 15L17 17M16 11.5C16 9.01468 13.9853 6.99998 11.5 6.99998C9.01469 6.99998 7 9.01468 7 11.5C7 13.9853 9.01469 16 11.5 16C13.9853 16 16 13.9853 16 11.5Z"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    />
+                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
                 <span v-if="webSearchEnabled" class="search-text">{{ $t('SendBox.webSearch') }}</span>
             </div>
@@ -95,60 +50,23 @@
             <!-- 发送ICON with label -->
             <div class="icon-with-label" v-if="controller === undefined" @click="onSubmitChat">
                 <span>意图解析</span>
-                <el-button
-                    type="primary"
-                    @click="onSubmitChat"
-                    class="right-send-stop-button"
-                >
+                <el-button type="primary" @click="onSubmitChat" class="right-send-stop-button">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none">
                         <path
                             d="M11.922 4.79004C16.6963 3.16245 19.0834 2.34866 20.3674 3.63261C21.6513 4.91656 20.8375 7.30371 19.21 12.078L18.1016 15.3292C16.8517 18.9958 16.2267 20.8291 15.1964 20.9808C14.9195 21.0216 14.6328 20.9971 14.3587 20.9091C13.3395 20.5819 12.8007 18.6489 11.7231 14.783C11.4841 13.9255 11.3646 13.4967 11.0924 13.1692C11.0134 13.0742 10.9258 12.9866 10.8308 12.9076C10.5033 12.6354 10.0745 12.5159 9.21705 12.2769C5.35111 11.1993 3.41814 10.6605 3.0909 9.64127C3.00292 9.36724 2.97837 9.08053 3.01916 8.80355C3.17088 7.77332 5.00419 7.14834 8.6708 5.89838L11.922 4.79004Z"
-                            stroke="currentColor"
-                            stroke-width="3.5"
-                        />
+                            stroke="currentColor" stroke-width="3.5" />
                     </svg>
                 </el-button>
             </div>
             <!-- 停止发送ICON -->
-            <el-button
-                type="danger"
-                @click="stopChat"
-                v-else
-                class="right-send-stop-button"
-            >
+            <el-button type="danger" @click="stopChat" v-else class="right-send-stop-button">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none">
                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3.5" />
-                    <path
-                        d="M9.5 9L9.5 15M14.5 9V15"
-                        stroke="currentColor"
-                        stroke-width="3.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    />
+                    <path d="M9.5 9L9.5 15M14.5 9V15" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"
+                        stroke-linejoin="round" />
                 </svg>
             </el-button>
-            <!-- 路径计算ICON with label -->
-            <div class="icon-with-label" @click="onTest">
-                <!-- 显示 Loading 组件 -->
-                <teleport to="body">
-                    <div v-if="showLoading" class="loading-overlay">
-                        <loading />
-                    </div>
-                </teleport>
-                <!-- 显示 ImageDisplay 组件 -->
-                <teleport to="body">
-                <div v-if="showImage" class="image-overlay" @click="handleOverlayClick">
-                    <image-display />
-                </div>
-                </teleport>
-                <span>路径计算</span>
-                <div
-                    class="image-button-wrapper"
-                    :class="{ disabled: routeDialogVisible }"
-                >
-                    <img src="@/components/SendBox/route.png" alt="additional route icon" />
-                </div>
-            </div>
+
         </div>
 
         <!-- 文件预览容器 -->
@@ -157,36 +75,14 @@
                 <img :src="file.base64" alt="uploaded file" />
                 <div class="delete-icon" @click="removeFile(index)">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none">
-                        <path
-                            d="M19.0005 4.99988L5.00049 18.9999M5.00049 4.99988L19.0005 18.9999"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        />
+                        <path d="M19.0005 4.99988L5.00049 18.9999M5.00049 4.99988L19.0005 18.9999" stroke="currentColor"
+                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                 </div>
             </div>
         </div>
 
-        <!-- 自定义弹窗 -->
-        <el-dialog
-            title="路径计算结果"
-            :visible.sync="routeDialogVisible"
-            width="30%"
-            :before-close="handleCloseDialog"
-            :append-to-body="true"
-            class="route-dialog"
-        >
-            <div class="dialog-content">
-                <el-progress v-if="isCalculating" :percentage="50" />
-                <span v-else>{{ routeResult || '路径计算结果为空' }}</span>
-            </div>
-            <span slot="footer" class="dialog-footer">
-                <el-button @click="routeDialogVisible = false">关闭</el-button>
-                <el-button type="primary" @click="routeDialogVisible = false">确认</el-button>
-            </span>
-        </el-dialog>
+
     </div>
 </template>
 
@@ -198,6 +94,7 @@ import { QA, Session } from "@/schema/chat";
 import { Segment, useDefault } from 'segmentit';
 import Loading from '@/components/SendBox/loading.vue'; // 引入 loading.vue//ILOVEU
 import ImageDisplay from '@/components/SendBox/ImageDisplay.vue'; //ILOVEU
+import { v4 as uuidv4 } from 'uuid'
 console.log('Loading component:', Loading); // 确认组件是否导入//ILOVEUimpo
 console.log('Loading component:', ImageDisplay); // 确认组件是否导入//ILOVEUimpo
 
@@ -206,12 +103,13 @@ const segmentit = useDefault(new Segment());
 export default {
     name: 'SendBox',
     components: {
-    Loading, // 注册 loading 组件 ILOVEU
-    ImageDisplay,// 注册 ImageDisplay 组件 ILOVEU
-  },
+        Loading, // 注册 loading 组件 ILOVEU
+        ImageDisplay,// 注册 ImageDisplay 组件 ILOVEU
+    },
     data() {
         return {
             query: "",
+            key:0,
             controller: undefined,
             uploadedFiles: [],
             isWebSearchEnabled: false,
@@ -286,16 +184,23 @@ export default {
         }
     },
     methods: {
+        forceUpdate(e) {
+            
+            this.$forceUpdate()
+        },
         onEnterKeyDown(e) {
+
             if (e.key === 'Enter') {
                 if (!e.shiftKey) {
                     e.preventDefault();
                     this.onSubmitChat();
+                 
                 }
             }
         },
         onEnterKeyUp() {
             if (this.query === '') {
+                console.log("dadasdas")
                 if (this.active_session_qa_data.length > 0) {
                     this.query = this.active_session_qa_data[this.active_session_qa_data.length - 1].query;
                 }
@@ -328,107 +233,57 @@ export default {
                 return import("@/api/Yidong_CMECloud").then(module => module.fetchAPI);
             }
         },
-    
-        async onTest() {
-            console.log("Clicked");
-            // 获取页面中所有的 <code> 标签
-            const codeTags = document.querySelectorAll('code');
-            // 检查是否存在 <code> 标签 //第一层判断
-            if (codeTags.length > 0) {
-                // 获取最后一个 <code> 标签的内容
-                const lastCodeContent = codeTags[codeTags.length - 1].textContent;
-                console.log("+++++++++++++++++++++++++++++++++++++"); // 打印内容
-                console.log(lastCodeContent); // 打印内容
-                console.log("+++++++++++++++++++++++++++++++++++++"); // 打印内容
-                //console.log(btoa(encodeURIComponent(lastCodeContent))); // 解决中文问题，打印 Base64 编码   
-                let jsonObj = JSON.parse(lastCodeContent); // 解析json 得到结构化数据
-                // 第二层判断 如果不是默认模态
-                console.log(jsonObj.modality_info.method);
-                console.log("+++++++++++++++++++++++++++++++++++++"); // 打印内容
-                if(jsonObj.modality_info.method != '999999'){ // 判断模态信息
-                    this.showLoading = true;
-                    // 发送 POST 请求到 http://127.0.0.1:12318/get_json
-                    try {
-                        const response = await fetch('http://127.0.0.1:12138/get_json', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ code: lastCodeContent }),
-                        });
 
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
 
-                        const result = await response.json();
-                        console.log('POST response:', result);
-                    } catch (error) {
-                        console.error('Error sending POST request:', error);
-                    }
-                    // 显示 loading 组件(改成了在发Post请求之前就显示，这样可能会快一点)
-                    // this.showLoading = true;
-                    console.log('showLoading:', this.showLoading);
-                    setTimeout(() => {
-                        console.log('Hiding loading, redirecting to show_image');
-                        this.showLoading = false;
-                        // 跳转到 http://127.0.0.1:12318/show_image
-                        window.open('http://127.0.0.1:12138/route', '_blank');
-                    }, 4000); // Loading 显示 4 秒
-                }
-                else{
-                    console.log('不支持路径计算的模态');
-                    this.$notify({
-                    title: '非法的路径计算',
-                    message: '意图解析出，此模态不支持路径计算',
-                    type: 'error',
-                });
-                }
-            } else {
-                console.log('页面中未生成JSON');
-                    this.$notify({
-                    title: '无 JSON 数据',
-                    message: '未完成意图解析工作,请提供更详尽的信息',
-                    type: 'warning',
-                });
-            }
-
-            
-        },
         handleOverlayClick(event) {
-        // 仅当点击 image-overlay 本身（而非其子元素）时关闭
-        if (event.target.classList.contains('image-overlay')) {
-            console.log('Clicked outside image, hiding image');
-            this.showImage = false;
+            // 仅当点击 image-overlay 本身（而非其子元素）时关闭
+            if (event.target.classList.contains('image-overlay')) {
+                console.log('Clicked outside image, hiding image');
+                this.showImage = false;
             }
         },
+
         async onSubmitChat() {
             this.query = this.query.trim();
-            if (this.query === '') {
-                return;
-            }
+            if (this.query === '') return;
+
             let [query, qaId, files] = [
                 this.query,
                 Date.now(),
                 JSON.parse(JSON.stringify(this.uploadedFiles))
             ];
-            this.query = '';
+
+               // 清空输入框数据
+            this.query = ""
             this.uploadedFiles = [];
-            let qa = new QA(qaId, query, "", files, undefined, undefined, this.model_config.series, this.model_config.name, this.model_config.type);
+            this.forceUpdate()
+            
+
+
+            let qa = new QA(qaId, query, "", files, undefined, undefined,
+                this.model_config.series, this.model_config.name, this.model_config.type);
+
             if (this.active === '') {
-                tabStoreHelper.add(query, qaId);
-                let session = new Session(qaId, [qa]);
+                 const sessionId = uuidv4()
+                tabStoreHelper.add(query, sessionId);
+               
+                console.log("Generated sessionId:", sessionId); // 调试日志
+                let session = new Session(sessionId, [qa]);
+                // console.log("session",session)
                 chatStoreHelper.addSession(session);
-                this.active = qaId;
+                this.active =sessionId ;
+
             } else {
                 chatStoreHelper.addQA(this.active, qa);
             }
+            let session = chatStoreHelper.getSession(this.active)
             let history = [];
             if (this.$store.state.setting.memory) {
                 history = this.active_session_qa_data
                     .slice((this.$store.state.setting.memory_limit + 1) * -1)
                     .filter(item => item.answer && item.answer.trim());
             }
+
             if (this.knowledgeEnabled && this.selectedRepo) {
                 const matches = this.matchKnowledgeBase(query);
                 if (matches.length > 0) {
@@ -437,90 +292,201 @@ export default {
                     chatStoreHelper.addQA(this.active, qa);
                 }
             }
+
             try {
                 this.controller = new AbortController();
-                this.getDynamicCall().then(fetchAPI => {
-                    fetchAPI({
-                        prompt: query,
-                        history: history,
-                        files: files,
-                        controller: this.controller,
-                        onopen: (event) => {
-                            console.log('连接成功');
-                            if (event !== undefined && event.status === 401) {
-                                this.$notify({
-                                    title: this.$t('SendBox.notifications.remoteFailed'),
-                                    message: this.$t('SendBox.errors.apiKey'),
-                                    type: 'error',
-                                });
-                            }
-                            if (event !== undefined && (event.status === 500 || event.status === 404)) {
-                                this.$notify({
-                                    title: this.$t('SendBox.notifications.connectionFailed'),
-                                    message: this.$t('SendBox.errors.connection'),
-                                    type: 'error',
-                                });
-                            } else if (event !== undefined && event.status === 422) {
-                                this.$notify({
-                                    title: this.$t('SendBox.notifications.interfaceError'),
-                                    message: this.$t('SendBox.errors.interface'),
-                                    type: 'error',
-                                });
-                            }
-                            qa.responseTime = new Date().getTime();
-                            chatStoreHelper.addQA(this.active, qa);
-                        },
-                        onmessage: (event) => {
-                            console.log("消息传输");
-                            if (event.event === 'error') {
-                                this.$notify({
-                                    title: this.$t('SendBox.notifications.interfaceError'),
-                                    message: this.$t('SendBox.errors.internalError'),
-                                    type: 'error',
-                                });
-                                qa.finishTime = new Date().getTime();
-                                this.stopChat();
-                                return;
-                            }
-                            if (event !== undefined && event.error && event.error.code === '1301') {
-                                this.$notify({
-                                    title: this.$t('Common.failed'),
-                                    message: event.error.message,
-                                    type: 'error',
-                                });
-                                return;
-                            }
-                            try {
-                                console.log("原始消息:", event);
-                                const newContent = postProcess(event, this.model_config.post_method);
-                                if (newContent && newContent.content) {
-                                    qa.answer = (qa.answer || '') + newContent.content;
+                const fetchAPI = await this.getDynamicCall();
+
+                fetchAPI({
+                    state: session.state,
+                    prompt: query,
+                    history: history,
+                    files: files,
+                    controller: this.controller,
+                    onopen: (event) => {
+                        console.log('连接成功');
+                        qa.responseTime = new Date().getTime();
+                        chatStoreHelper.addQA(this.active, qa);
+                    },
+                    onmessage: (event) => {
+                        try {
+                            if (event.data) {
+                                // SSE 特殊结束符处理
+                                if (event.data === '[DONE]') {
+                                    // qa.answer = (qa.answer || '') 
+                                    // 对完整内容的进行操作
+                                    qa.finishTime = new Date().getTime();
+                                    this.stopChat();
                                     chatStoreHelper.addQA(this.active, qa);
-                                } else if (newContent && newContent.reasoning_content) {
-                                    qa.reason = (qa.reason || '') + newContent.reasoning_content;
+                                    console.log('流式结束');
+                                    return;
+                                }
+
+                                // 1. 检查是否是 JSON 消息
+                                const data = JSON.parse(event.data);
+                                // 如果是 content chunk
+                                if (data.content) {
+                                    qa.answer = (qa.answer || '') + data.content;
                                     chatStoreHelper.addQA(this.active, qa);
                                 }
-                            } catch (e) {
-                                console.error("解析响应错误:", e, event);
+                                // 如果是 state
+                                if (data.type == "state") {
+                                    if (data.parse_success && data.stage == "complete" && data.workflow == "intent_parsing") {
+                                        data.workflow = "dag"
+                                        // let qa = new QA(Date.now(), "", "", [], undefined, undefined,
+                                        //     this.model_config.series, this.model_config.name, this.model_config.type);
+                                        // qa.answer = "意图解析已完成，点击确认按钮提交解析结果。系统已为业务生成任务DAG。有疑问可以继续与我交流"
+                                        // chatStoreHelper.addQA(this.active, qa)
+                                         console.log("dag set", this.active, data)
+                                    }
+                                    // 更新 vuex store 中的 session 的state
+                                    console.log("update", this.active, data)
+                                    chatStoreHelper.setSessionState(this.active, data)
+
+                                    // this.$store.commit('updateState', data.state);
+                                }
+
                             }
-                        },
-                        onclose: () => {
-                            console.log("连接关闭");
-                            qa.finishTime = new Date().getTime();
-                            this.stopChat();
-                            chatStoreHelper.addQA(this.active, qa);
-                        },
-                        onerror: (error) => {
-                            console.log('close', error);
-                            this.stopChat();
-                            this.$message.error(this.$t('SendBox.errors.system', { error }));
+                        } catch (e) {
+                            console.error("解析 SSE 消息错误:", e, event);
                         }
-                    });
+                    },
+                    onclose: () => {
+                        console.log("连接关闭");
+                        qa.finishTime = new Date().getTime();
+                        this.stopChat();
+                        chatStoreHelper.addQA(this.active, qa);
+                    },
+                    onerror: (error) => {
+                        console.error('流式接口错误:', error);
+                        this.stopChat();
+                        this.$message.error(this.$t('SendBox.errors.system', { error }));
+                    }
                 });
+
             } catch (e) {
-                console.error(e);
+                console.error("提交聊天异常:", e);
             }
         },
+        // async onSubmitChat() {
+        //     this.query = this.query.trim();
+        //     if (this.query === '') {
+        //         return;
+        //     }
+        //     let [query, qaId, files] = [
+        //         this.query,
+        //         Date.now(),
+        //         JSON.parse(JSON.stringify(this.uploadedFiles))
+        //     ];
+        //     this.query = '';
+        //     this.uploadedFiles = [];
+        //     let qa = new QA(qaId, query, "", files, undefined, undefined, this.model_config.series, this.model_config.name, this.model_config.type);
+        //     if (this.active === '') {
+        //         tabStoreHelper.add(query, qaId);
+        //         let session = new Session(qaId, [qa]);
+        //         chatStoreHelper.addSession(session);
+        //         this.active = qaId;
+        //     } else {
+        //         chatStoreHelper.addQA(this.active, qa);
+        //     }
+        //     let history = [];
+        //     if (this.$store.state.setting.memory) {
+        //         history = this.active_session_qa_data
+        //             .slice((this.$store.state.setting.memory_limit + 1) * -1)
+        //             .filter(item => item.answer && item.answer.trim());
+        //     }
+        //     if (this.knowledgeEnabled && this.selectedRepo) {
+        //         const matches = this.matchKnowledgeBase(query);
+        //         if (matches.length > 0) {
+        //             query = `基于以下知识库内容回答问题:${matches.map(chunk => chunk.content).join('\n')}问题: ${query}`;
+        //             qa.recall = matches;
+        //             chatStoreHelper.addQA(this.active, qa);
+        //         }
+        //     }
+        //     try {
+        //         this.controller = new AbortController();
+        //         this.getDynamicCall().then(fetchAPI => {
+        //             fetchAPI({
+        //                 prompt: query,
+        //                 history: history,
+        //                 files: files,
+        //                 controller: this.controller,
+        //                 onopen: (event) => {
+        //                     console.log('连接成功');
+        //                     if (event !== undefined && event.status === 401) {
+        //                         this.$notify({
+        //                             title: this.$t('SendBox.notifications.remoteFailed'),
+        //                             message: this.$t('SendBox.errors.apiKey'),
+        //                             type: 'error',
+        //                         });
+        //                     }
+        //                     if (event !== undefined && (event.status === 500 || event.status === 404)) {
+        //                         this.$notify({
+        //                             title: this.$t('SendBox.notifications.connectionFailed'),
+        //                             message: this.$t('SendBox.errors.connection'),
+        //                             type: 'error',
+        //                         });
+        //                     } else if (event !== undefined && event.status === 422) {
+        //                         this.$notify({
+        //                             title: this.$t('SendBox.notifications.interfaceError'),
+        //                             message: this.$t('SendBox.errors.interface'),
+        //                             type: 'error',
+        //                         });
+        //                     }
+        //                     qa.responseTime = new Date().getTime();
+        //                     chatStoreHelper.addQA(this.active, qa);
+        //                 },
+        //                 onmessage: (event) => {
+        //                     console.log("消息传输");
+        //                     if (event.event === 'error') {
+        //                         this.$notify({
+        //                             title: this.$t('SendBox.notifications.interfaceError'),
+        //                             message: this.$t('SendBox.errors.internalError'),
+        //                             type: 'error',
+        //                         });
+        //                         qa.finishTime = new Date().getTime();
+        //                         this.stopChat();
+        //                         return;
+        //                     }
+        //                     if (event !== undefined && event.error && event.error.code === '1301') {
+        //                         this.$notify({
+        //                             title: this.$t('Common.failed'),
+        //                             message: event.error.message,
+        //                             type: 'error',
+        //                         });
+        //                         return;
+        //                     }
+        //                     try {
+        //                         console.log("原始消息:", event);
+        //                         const newContent = postProcess(event, this.model_config.post_method);
+        //                         if (newContent && newContent.content) {
+        //                             qa.answer = (qa.answer || '') + newContent.content;
+        //                             chatStoreHelper.addQA(this.active, qa);
+        //                         } else if (newContent && newContent.reasoning_content) {
+        //                             qa.reason = (qa.reason || '') + newContent.reasoning_content;
+        //                             chatStoreHelper.addQA(this.active, qa);
+        //                         }
+        //                     } catch (e) {
+        //                         console.error("解析响应错误:", e, event);
+        //                     }
+        //                 },
+        //                 onclose: () => {
+        //                     console.log("连接关闭");
+        //                     qa.finishTime = new Date().getTime();
+        //                     this.stopChat();
+        //                     chatStoreHelper.addQA(this.active, qa);
+        //                 },
+        //                 onerror: (error) => {
+        //                     console.log('close', error);
+        //                     this.stopChat();
+        //                     this.$message.error(this.$t('SendBox.errors.system', { error }));
+        //                 }
+        //             });
+        //         });
+        //     } catch (e) {
+        //         console.error(e);
+        //     }
+        // },
         processImage(file) {
             if (this.uploadedFiles.length >= this.upload_limit) {
                 this.$notify({
@@ -653,6 +619,7 @@ $icon-length: 32px;
  * 通用的hover效果定义
  */
 @mixin hover-effect {
+
     &.active,
     &:hover {
         background: var(--aside-active-hover-bg);
@@ -788,7 +755,8 @@ $icon-length: 32px;
             margin-right: 4px;
             white-space: nowrap;
             /* 在这里添加 */
-            font-weight: bold; /* 或者使用 font-weight: 700; 设置字体*/
+            font-weight: bold;
+            /* 或者使用 font-weight: 700; 设置字体*/
         }
 
         .right-send-stop-button {
@@ -970,30 +938,34 @@ $icon-length: 32px;
 </style>
 <style scoped>
 .loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5); /* 灰暗背景，与 loading.vue 一致 */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10000;
-  border: 2px solid red; /* 调试边框 */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    /* 灰暗背景，与 loading.vue 一致 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    border: 2px solid red;
+    /* 调试边框 */
 }
 
 .image-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5); /* 与 loading-overlay 相同的背景 */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10000;
-  border: 2px solid red; /* 调试边框 */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    /* 与 loading-overlay 相同的背景 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    border: 2px solid red;
+    /* 调试边框 */
 }
 </style>

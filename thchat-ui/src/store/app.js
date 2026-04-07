@@ -22,6 +22,7 @@ const app = {
         ready: false,
         // 当前处于激活状态的会话uuid
         active: '',
+        sessionState:{},
         // 所有标签页
         tab: new Tab({list: []}),
         // 所有会话的聊天记录
@@ -35,12 +36,23 @@ const app = {
             state.active = active
             indexDBUtil.set('active', 'value', active)
         },
+        // SET_SESSION_STATE: (state, sessionState) => {
+        //     state.sessionState = sessionState
+        // },
         SET_TAB: (state, ins) => {
             state.tab = ins instanceof Tab ? ins : new Tab(ins);
             indexDBUtil.set('tabStorage', 'value', state.tab)
         },
         SET_CHAT: (state, ins) => {
-            state.chat = ins instanceof Chat ? ins : new Chat(ins);
+            // 确保深层响应式更新
+            if (ins instanceof Chat) {
+                state.chat = ins;
+            } else {
+                // 如果传入的是普通对象，创建新的 Chat 实例
+                state.chat = new Chat(ins);
+            }
+            // 强制更新所有依赖此状态的组件
+            state.chat._updateTimestamp = Date.now();
             indexDBUtil.set('chatStorage', 'value', state.chat)
         },
         SET_KB: (state, kb) => {
@@ -53,18 +65,21 @@ const app = {
     },
 
     actions: {
-        async initializeState({commit}) {
+        async initializeState({commit,state}) {
             try {
                 const active = await indexDBUtil.get('active', 'value') || ''
                 const tabData = await indexDBUtil.get('tabStorage', 'value') || {list: []}
                 const chatData = await indexDBUtil.get('chatStorage', 'value') || {list: []}
                 const kbData = await indexDBUtil.get('kbStorage', 'value') || {list: []}
-
+                
                 commit('SET_ACTIVE', active)
                 commit('SET_TAB', tabData)
                 commit('SET_CHAT', chatData)
                 commit('SET_KB', kbData)
                 commit('SET_READY', true)
+                let activeSession=state.chat.findSession(active)
+                // console.log('activeSession',activeSession, activeSession.state)
+                // commit('SET_SESSION_STATE', activeSession.state || {})
             } catch (error) {
                 console.error('初始化状态失败:', error)
             }
@@ -78,6 +93,9 @@ const app = {
         setChat({commit}, ins) {
             commit('SET_CHAT', ins)
         },
+        // setSessionState({commit}, sessionState) {
+        //     commit('SET_SESSION_STATE', sessionState)
+        // },
         setKb({commit}, kb) {
             commit('SET_KB', kb)
         },
@@ -86,11 +104,13 @@ const app = {
             const tabData = {list: []}
             const chatData = {list: []}
             const kbData = {list: []}
+            const sessionState = {}
 
             commit('SET_ACTIVE', active)
             commit('SET_TAB', tabData)
             commit('SET_CHAT', chatData)
             commit('SET_KB', kbData)
+            commit('SET_SESSION_STATE', sessionState)
         }
     },
 
