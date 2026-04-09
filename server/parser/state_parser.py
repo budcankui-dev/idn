@@ -131,14 +131,22 @@ def parse_intent_output(llm_text: str, state: Optional[State] = None) -> State:
     business_type in ["视频AI推理", "AI模型训练"] and
     len(missing_params) == 0 and
     len(reason_params) == 0)
-
+    modal_map = {
+        "低时延转发模态": "低时延转发模态",
+        "高性能批处理模态": "高性能批处理模态",
+        "默认模态": "低时延转发模态"
+    }
     # ---------------------- DAG 填充 ----------------------
     if state.parse_success and state.stage == "complete":
         if business_type == "视频AI推理":
             dag = json.loads(json.dumps(VIDEO_DAG_TEMPLATE))  # 深拷贝
         else:
             dag = json.loads(json.dumps(TRAIN_DAG_TEMPLATE))
-
+        # 模态
+        modal = params.get("模态", "低时延转发模态")
+        dag["policy_type"] =modal_map.get(modal, "低时延转发模态")
+        # 填充job_id
+        dag["job_id"] = f"{business_type}_{modal}_{state.session_id}"
         # 填充 submit_ts_ms
         start_time_str = params.get("开始时间")
         if start_time_str:

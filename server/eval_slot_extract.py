@@ -10,7 +10,7 @@ def extract_label(record):
     从接口返回结果中提取槽位标签
     """
     try:
-        slot_state = record['label']['slot_state']
+        slot_state = record['label']
         # 假设slot_state是dict，所有key为槽位名，value为槽位值
         return slot_state
     except Exception:

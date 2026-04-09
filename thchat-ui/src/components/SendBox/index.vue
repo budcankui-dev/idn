@@ -268,7 +268,13 @@ export default {
                 tabStoreHelper.add(query, sessionId);
                
                 console.log("Generated sessionId:", sessionId); // 调试日志
-                let session = new Session(sessionId, [qa]);
+                let new_state={
+                    session_id:sessionId,
+                    // workflow:"intent_parsing",
+                    // stage:"start",
+                    // parse_success:false,
+                }
+                let session = new Session(sessionId, [qa],new_state);
                 // console.log("session",session)
                 chatStoreHelper.addSession(session);
                 this.active =sessionId ;
@@ -298,6 +304,7 @@ export default {
                 const fetchAPI = await this.getDynamicCall();
 
                 fetchAPI({
+
                     state: session.state,
                     prompt: query,
                     history: history,

@@ -94,9 +94,8 @@ async def parse_intent_workflow(llm, messages: List[BaseMessage], state: State):
 
     # 解析状态
     slot_state = parse_intent_output(slot_full_text, state)
-    print("**slot_state:**" * 20)
+    print("slot_state"+"*" * 20)
     print("slot_state:", slot_state)
-    print("**slot_state:**" * 20)
 
     yield f"data: {json.dumps(slot_state.model_dump())}\n\n"
 
@@ -115,9 +114,9 @@ async def parse_intent_workflow(llm, messages: List[BaseMessage], state: State):
 
     # 解析最终状态
     final_state = parse_intent_output(full_text, slot_state)
-    print("**final_state:**"*20)
-    print("final_state:", final_state)
-    print("**final_state:**"*20)
+    # print("final_state"+"*" * 20)
+    # print("final_state:", final_state)
+    
     yield f"data: {json.dumps(final_state.model_dump())}\n\n"
 
     yield "data: [DONE]\n\n"
@@ -147,7 +146,9 @@ async def parse_dag_workflow(llm, messages: List[BaseMessage], state: State):
 # ===== 单接口流式返回 =====
 @app.post("/chat/stream")
 async def chat_api(data: ChatData):
-    # print(data)
+    print("Received data:"+"*" * 20)
+    print(data)
+    print(data.state)
     workflow=data.state.workflow
     messages = format_to_messages(data, sys_prompt=None)  # 初始 messages，不加 system prompt
     if workflow=="intent_parsing":
@@ -175,7 +176,7 @@ async def chat_slot_extract(data: ChatData):
     final_state = parse_intent_output(full_text, data.state)
     return JSONResponse(content=jsonable_encoder({
         "content": full_text,
-        "slot_state": final_state.model_dump()
+        "state": final_state.model_dump()
     }))
     
 if __name__ == "__main__":

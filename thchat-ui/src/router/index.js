@@ -40,7 +40,19 @@ const routes = [
                 component: () => import('@/views/kb/index.vue')
             }
         ]
-    }
+    },
+    //  {
+    //     path: '/admin',
+    //     name: 'admin',
+    //     component: Layout,
+    //     children: [
+    //         {
+    //             path: '', // 默认子路由
+    //             name: 'admin',
+    //             component: () => import('@/views/admin/index.vue')
+    //         }
+    //     ]
+    // }
 ]
 
 const router = createRouter({

@@ -42,6 +42,7 @@ class Session {
         data = [],state) {
         this.sessionId = sessionId;
         this.state=state
+        // this.state.session_id=sessionId
    
         this.data = data.map(qa => {
             return qa instanceof QA ? qa : new QA(
