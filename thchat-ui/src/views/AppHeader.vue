@@ -21,6 +21,11 @@
                     stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
             </svg>
         </div>
+        <!-- 右侧用户信息 -->
+        <div class="user-info" v-if="username">
+            <span class="username">{{ username }}</span>
+            <el-tag size="small" :type="isAdmin ? 'danger' : 'success'">{{ isAdmin ? '管理员' : '用户' }}</el-tag>
+        </div>
         <!-- 右侧模型信息 -->
         <div class="model-info">
             <el-tooltip effect="dark" placement="bottom" :content="tooltip_content" popper-class="settings-tooltip">
@@ -101,6 +106,12 @@ export default {
         model_type() {
             const { model_config } = this.$store.state.setting;
             return model_config.type;
+        },
+        username() {
+            return this.$store.state.user.userInfo?.username || ''
+        },
+        isAdmin() {
+            return this.$store.state.user.userInfo?.role === 'admin'
         }
     },
     methods: {
@@ -195,6 +206,21 @@ export default {
         &:hover {
             background: var(--aside-active-hover-bg);
             border-radius: 8px;
+        }
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 12px;
+        background: var(--aside-active-hover-bg);
+        border-radius: 16px;
+        margin-right: 8px;
+
+        .username {
+            font-size: 13px;
+            color: var(--common-color);
         }
     }
 }

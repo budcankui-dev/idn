@@ -28,7 +28,17 @@ app = FastAPI(title="智算业务助手", version="1.0")
 
 # 数据库api
 from api.db_api import router as db_router
+from api.auth_api import router as auth_router
+from api.user_api import router as user_router
+from api.chat_api import router as chat_router
+from api.task_api import router as task_router
+from api.admin_task_api import router as admin_task_router
 app.include_router(db_router)
+app.include_router(auth_router)
+app.include_router(user_router)
+app.include_router(chat_router)
+app.include_router(task_router)
+app.include_router(admin_task_router)
 
 # ===== 数据结构 =====
 class ChatTurn(BaseModel):

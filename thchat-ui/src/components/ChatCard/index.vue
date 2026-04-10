@@ -173,7 +173,7 @@ export default {
     },
     props: {
         // QA的id
-        qaId: Number,
+        qaId: [Number, String],
         // AI回答
         answer: String,
         // 用户提问
@@ -181,15 +181,15 @@ export default {
         // 模型系列
         series: String,
         // 回复时间
-        responseTime: Number,
+        responseTime: [Number, String],
         // 结束时间
-        finishTime: Number,
+        finishTime: [Number, String],
         // 模型名称
-        modelName: String,
+        modelName: [String, Number],
         // 文件
         files: Array,
         // 模型类型
-        modelType: String,
+        modelType: [String, Number],
         // 召回内容
         recall: Array,
         // 思考内容

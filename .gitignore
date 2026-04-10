@@ -76,6 +76,7 @@ tests/
 *.spec.ts
 .jest/
 coverage/
+.playwright-cli
 
 # SQLite
 *.db

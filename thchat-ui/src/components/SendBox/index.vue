@@ -88,15 +88,12 @@
 
 <script>
 import { postProcess } from "@/util/config";
-import tabStoreHelper from "@/schema/tabStoreHelper";
-import chatStoreHelper from "@/schema/chatStoreHelper";
-import { QA, Session } from "@/schema/chat";
+import { QA } from "@/schema/chat";
+import * as chatApi from '@/api/chat';
 import { Segment, useDefault } from 'segmentit';
-import Loading from '@/components/SendBox/loading.vue'; // 引入 loading.vue//ILOVEU
-import ImageDisplay from '@/components/SendBox/ImageDisplay.vue'; //ILOVEU
+import Loading from '@/components/SendBox/loading.vue';
+import ImageDisplay from '@/components/SendBox/ImageDisplay.vue';
 import { v4 as uuidv4 } from 'uuid'
-console.log('Loading component:', Loading); // 确认组件是否导入//ILOVEUimpo
-console.log('Loading component:', ImageDisplay); // 确认组件是否导入//ILOVEUimpo
 
 const segmentit = useDefault(new Segment());
 
@@ -129,18 +126,15 @@ export default {
     computed: {
         active: {
             get() {
-                return this.$store.state.app.active;
+                return this.$store.state.chat.active;
             },
             set(val) {
                 this.$store.dispatch('setActive', val);
             }
         },
-        chat() {
-            return this.$store.state.app.chat;
-        },
         active_session_qa_data() {
-            const activeSession = this.chat.findSession(this.active);
-            return activeSession?.data || [];
+            const activeSession = this.$store.state.chat.chat.list.find(s => s.sessionId === this.active);
+            return activeSession ? activeSession.data : [];
         },
         platform() {
             return this.$store.state.setting.platform;
@@ -265,24 +259,38 @@ export default {
 
             if (this.active === '') {
                  const sessionId = uuidv4()
-                tabStoreHelper.add(query, sessionId);
-               
-                console.log("Generated sessionId:", sessionId); // 调试日志
-                let new_state={
-                    session_id:sessionId,
-                    // workflow:"intent_parsing",
-                    // stage:"start",
-                    // parse_success:false,
-                }
-                let session = new Session(sessionId, [qa],new_state);
-                // console.log("session",session)
-                chatStoreHelper.addSession(session);
-                this.active =sessionId ;
-
-            } else {
-                chatStoreHelper.addQA(this.active, qa);
+                console.log("Generated sessionId:", sessionId);
+                // 使用 store action 创建新会话
+                await this.$store.dispatch('createSession', {
+                    sessionId,
+                    title: query.substring(0, 20) + '...'
+                });
+                this.active = sessionId;
             }
-            let session = chatStoreHelper.getSession(this.active)
+
+            // 添加消息到当前会话
+            await this.$store.dispatch('addMessage', {
+                sessionId: this.active,
+                message: qa
+            });
+
+            // 如果当前会话标题是默认的"新会话"，更新为消息内容前缀
+            const currentSession = this.$store.state.chat.chat.list.find(
+                s => s.sessionId === this.active
+            );
+            console.log('Session title check:', currentSession?.title, '=== "新会话"?', currentSession?.title === '新会话');
+            if (currentSession && currentSession.title === '新会话') {
+                const newTitle = query.substring(0, 20) + (query.length > 20 ? '...' : '');
+                console.log('Updating session title to:', newTitle);
+                await this.$store.dispatch('updateSessionTitle', {
+                    sessionId: this.active,
+                    title: newTitle
+                });
+            }
+
+            // 获取当前 session state
+            const sessionState = currentSession?.state || {};
+
             let history = [];
             if (this.$store.state.setting.memory) {
                 history = this.active_session_qa_data
@@ -295,7 +303,6 @@ export default {
                 if (matches.length > 0) {
                     query = `基于以下知识库内容回答问题:${matches.map(chunk => chunk.content).join('\n')}问题: ${query}`;
                     qa.recall = matches;
-                    chatStoreHelper.addQA(this.active, qa);
                 }
             }
 
@@ -305,7 +312,7 @@ export default {
 
                 fetchAPI({
 
-                    state: session.state,
+                    state: sessionState,
                     prompt: query,
                     history: history,
                     files: files,
@@ -313,18 +320,25 @@ export default {
                     onopen: (event) => {
                         console.log('连接成功');
                         qa.responseTime = new Date().getTime();
-                        chatStoreHelper.addQA(this.active, qa);
                     },
                     onmessage: (event) => {
                         try {
                             if (event.data) {
                                 // SSE 特殊结束符处理
                                 if (event.data === '[DONE]') {
-                                    // qa.answer = (qa.answer || '') 
-                                    // 对完整内容的进行操作
                                     qa.finishTime = new Date().getTime();
+                                    this.$store.dispatch('updateMessageAnswer', {
+                                        sessionId: this.active,
+                                        qaId: qa.qaId,
+                                        answer: qa.answer,
+                                        finishTime: qa.finishTime
+                                    });
+                                    // 持久化 answer 到数据库
+                                    chatApi.updateChatMessage(String(qa.qaId), {
+                                        answer: qa.answer,
+                                        finish_time: new Date(qa.finishTime).toISOString()
+                                    }).catch(err => console.error('保存答案失败:', err));
                                     this.stopChat();
-                                    chatStoreHelper.addQA(this.active, qa);
                                     console.log('流式结束');
                                     return;
                                 }
@@ -334,23 +348,23 @@ export default {
                                 // 如果是 content chunk
                                 if (data.content) {
                                     qa.answer = (qa.answer || '') + data.content;
-                                    chatStoreHelper.addQA(this.active, qa);
+                                    console.log('onmessage content: qa.qaId=', qa.qaId, 'active=', this.active, 'answer len=', qa.answer.length);
+                                    // 更新 store 中的 answer
+                                    this.$store.dispatch('updateMessageAnswer', {
+                                        sessionId: this.active,
+                                        qaId: qa.qaId,
+                                        answer: qa.answer
+                                    });
                                 }
                                 // 如果是 state
                                 if (data.type == "state") {
                                     if (data.parse_success && data.stage == "complete" && data.workflow == "intent_parsing") {
                                         data.workflow = "dag"
-                                        // let qa = new QA(Date.now(), "", "", [], undefined, undefined,
-                                        //     this.model_config.series, this.model_config.name, this.model_config.type);
-                                        // qa.answer = "意图解析已完成，点击确认按钮提交解析结果。系统已为业务生成任务DAG。有疑问可以继续与我交流"
-                                        // chatStoreHelper.addQA(this.active, qa)
                                          console.log("dag set", this.active, data)
                                     }
                                     // 更新 vuex store 中的 session 的state
                                     console.log("update", this.active, data)
-                                    chatStoreHelper.setSessionState(this.active, data)
-
-                                    // this.$store.commit('updateState', data.state);
+                                    this.$store.dispatch('setSessionState', data)
                                 }
 
                             }
@@ -361,8 +375,18 @@ export default {
                     onclose: () => {
                         console.log("连接关闭");
                         qa.finishTime = new Date().getTime();
+                        this.$store.dispatch('updateMessageAnswer', {
+                            sessionId: this.active,
+                            qaId: qa.qaId,
+                            answer: qa.answer,
+                            finishTime: qa.finishTime
+                        });
+                        // 持久化 answer 到数据库
+                        chatApi.updateChatMessage(String(qa.qaId), {
+                            answer: qa.answer,
+                            finish_time: new Date(qa.finishTime).toISOString()
+                        }).catch(err => console.error('保存答案失败:', err));
                         this.stopChat();
-                        chatStoreHelper.addQA(this.active, qa);
                     },
                     onerror: (error) => {
                         console.error('流式接口错误:', error);

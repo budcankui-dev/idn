@@ -15,12 +15,12 @@
                     <Plus />
                 </el-icon>
             </div>
-            <div class="session flex" v-for="x in tab.getAllTabs()" key="x.uuid" :class="{ active: x.uuid === active }"
-                @click="pickTab(x.uuid)">
+            <div class="session flex" v-for="x in sessionList" :key="x.sessionId" :class="{ active: x.sessionId === active }"
+                @click="pickTab(x.sessionId)">
                 <div class="title">
                     <span>{{ x.title }}</span>
-                    <div class="btn-box" v-if="x.uuid === active">
-                        <svg @click.stop="delTab(x.uuid)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                    <div class="btn-box" v-if="x.sessionId === active">
+                        <svg @click.stop="delTab(x.sessionId)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
                             width="16" height="16" fill="none">
                             <path
                                 d="M19.5 5.5L18.8803 15.5251C18.7219 18.0864 18.6428 19.3671 18.0008 20.2879C17.6833 20.7431 17.2747 21.1273 16.8007 21.416C15.8421 22 14.559 22 11.9927 22C9.42312 22 8.1383 22 7.17905 21.4149C6.7048 21.1257 6.296 20.7408 5.97868 20.2848C5.33688 19.3626 5.25945 18.0801 5.10461 15.5152L4.5 5.5"
@@ -42,21 +42,6 @@
         <!-- 工具栏 Start -->
         <div class="optionBar">
             <div class="options">
-                <div class="option" @click="goToPage('/kb')">
-                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
-                        fill="none">
-                        <path
-                            d="M7 6.00085H16.75C18.8567 6.00085 19.91 6.00085 20.6667 6.50644C20.9943 6.72532 21.2755 7.00657 21.4944 7.33414C22 8.09081 22 9.14416 22 11.2509C22 14.7621 22 16.5176 21.1573 17.7788C20.975 18.0517 20.7666 18.3054 20.5355 18.5364M3.46447 18.5364C2 17.072 2 14.7149 2 10.0009V6.94512C2 5.12865 2 4.22041 2.38032 3.53891C2.65142 3.05312 3.05227 2.65227 3.53806 2.38117C4.21956 2.00085 5.1278 2.00085 6.94427 2.00085C8.10802 2.00085 8.6899 2.00085 9.19926 2.19186C10.3622 2.62797 10.8418 3.68443 11.3666 4.73398L12 6.00085"
-                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                        <path
-                            d="M10.4499 12.0009V13.9799M6.96289 15.5012H9.01487M14.986 15.5012H17.0379M14.986 18.4745H17.0379M6.96289 18.4745H9.01487M10.4499 20.0201V21.9991M13.4754 20.0201V21.9991M13.4646 12.0009V13.9799M10.0149 19.9684H13.986C14.5382 19.9684 14.986 19.5207 14.986 18.9684V14.9799C14.986 14.4276 14.5382 13.9799 13.986 13.9799H10.0149C9.46258 13.9799 9.01487 14.4276 9.01487 14.9799V18.9684C9.01487 19.5207 9.46258 19.9684 10.0149 19.9684Z"
-                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                    </svg>
-                    <div class="option-text red-dot-wrapper">{{ $t('AppAside.tool_kb_name') }}</div>
-                </div>
-                <div class="divider">
-                    <div class="border"></div>
-                </div>
                 <div class="option" @click="goToDialog('/setting')">
                     <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
                         fill="none">
@@ -70,7 +55,51 @@
                             d="M18.5 15L18.7579 15.697C19.0961 16.611 19.2652 17.068 19.5986 17.4014C19.932 17.7348 20.389 17.9039 21.303 18.2421L22 18.5L21.303 18.7579C20.389 19.0961 19.932 19.2652 19.5986 19.5986C19.2652 19.932 19.0961 20.389 18.7579 21.303L18.5 22L18.2421 21.303C17.9039 20.389 17.7348 19.932 17.4014 19.5986C17.068 19.2652 16.611 19.0961 15.697 18.7579L15 18.5L15.697 18.2421C16.611 17.9039 17.068 17.7348 17.4014 17.4014C17.7348 17.068 17.9039 16.611 18.2421 15.697L18.5 15Z"
                             stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
                     </svg>
-                    <div class="option-text">{{ $t('AppAside.tool_setting_name') }}</div>
+                    <div class="option-text">设置</div>
+                </div>
+                <div class="divider">
+                    <div class="border"></div>
+                </div>
+                <div class="option" @click="goToPage('/admin/users')" v-if="isAdmin">
+                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
+                        fill="none">
+                        <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12Z"
+                            stroke="currentColor" stroke-width="1.5" />
+                        <path d="M18 20V18C18 16.93 17.55 15.95 16.83 15.21L15.46 14.21C14.76 13.65 14 13.38 13.21 13.38H10.79C10 13.38 9.24 13.65 8.54 14.21L7.17 15.21C6.45 15.95 6 16.93 6 18V20"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                        <path d="M6 10C6 11.66 7.34 13 9 13H15C16.66 13 18 11.66 18 10V9H6V10Z"
+                            stroke="currentColor" stroke-width="1.5" />
+                        <path d="M2 20H22"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                    <div class="option-text">用户管理</div>
+                </div>
+                <div class="option" @click="goToPage('/admin/tasks')" v-if="isAdmin">
+                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
+                        fill="none">
+                        <path d="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                        <path d="M9 5C9 3.89543 9.89543 3 11 3H13C14.1046 3 15 3.89543 15 5C15 6.10457 14.1046 7 13 7H11C9.89543 7 9 6.10457 9 5Z"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                        <path d="M9 12H15M9 16H12"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                    <div class="option-text">任务管理</div>
+                </div>
+                <div class="divider" v-if="isAdmin">
+                    <div class="border"></div>
+                </div>
+                <div class="option" @click="handleLogout">
+                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
+                        fill="none">
+                        <path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M16 17L21 12L16 7"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M21 12H9"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <div class="option-text">注销</div>
                 </div>
                 <!-- <div class="option" @click="goToPage('/docs')">
                     <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
@@ -121,8 +150,6 @@ import Setting from './setting/index.vue'
 import About from './about/index.vue'
 import logoDark from '../assets/images/logo_dark_2480.png'
 import logoLight from '../assets/images/logo_light_2480.png'
-import tabStoreHelper from '@/schema/tabStoreHelper'
-import chatStoreHelper from '@/schema/chatStoreHelper'
 
 export default {
     name: 'AppAside',
@@ -141,18 +168,21 @@ export default {
     computed: {
         active: {
             get() {
-                return this.$store.state.app.active;
+                return this.$store.state.chat.active;
             },
             set(val) {
                 this.$store.dispatch('setActive', val);
             }
         },
-        tab() {
-            return this.$store.state.app.tab;
+        sessionList() {
+            return this.$store.state.chat.chat.list;
         },
         logoSrc() {
             const theme = this.$store.state.setting.theme
             return theme === 'dark' ? logoLight : logoDark
+        },
+        isAdmin() {
+            return this.$store.state.user?.userInfo?.role === 'admin'
         }
     },
     methods: {
@@ -160,15 +190,20 @@ export default {
          * 删除历史聊天选项卡
          * @param uuid 要删除的选项卡uuid
          */
-        delTab(uuid) {
-            // 获取前一个选项卡的uuid
-            let active = this.tab.getPrevUuid(uuid);
-            // 删除选项卡
-            tabStoreHelper.del(uuid);
-            // 同时要删除对应的聊天数据
-            chatStoreHelper.delSession(uuid);
-            // 更新active
-            this.active = active;
+        async delTab(uuid) {
+            // 获取 session 列表
+            const sessions = this.$store.state.chat.chat.list;
+            const idx = sessions.findIndex(s => s.sessionId === uuid);
+            // 计算前一个 session 的 uuid
+            let nextActive = '';
+            if (sessions.length > 1) {
+                const newIdx = idx === 0 ? 1 : idx - 1;
+                nextActive = sessions[newIdx].sessionId;
+            }
+            // 删除会话（调用 store action，会同步删除 MySQL 数据）
+            await this.$store.dispatch('deleteSession', uuid);
+            // 更新 active
+            this.active = nextActive;
         },
 
         /**
@@ -199,13 +234,21 @@ export default {
         /**
          * 开始新的会话
          */
-        startNewSession() {
+        async startNewSession() {
             // 判断当前是否为聊天页面 如果不是那么跳转到聊天页
             if (this.$router.currentRoute.value.name !== 'index') {
                 this.goToPage('/');
             }
-            // 更新active
-            this.active = '';
+            // 创建新会话
+            const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            try {
+                await this.$store.dispatch('createSession', {
+                    sessionId,
+                    title: '新会话'
+                });
+            } catch (error) {
+                console.error('创建会话失败:', error);
+            }
 
             // 在手机模式下,触发收起侧边栏
             if (this.isMobileDevice()) {
@@ -252,6 +295,20 @@ export default {
             } else {
                 this.goToPage(path)
             }
+        },
+
+        /**
+         * 退出登录
+         */
+        handleLogout() {
+            // Clear all user-related data
+            localStorage.removeItem('access_token')
+            localStorage.removeItem('user_info')
+            // Redirect to login with hash and reload
+            window.location.hash = '#/login'
+            setTimeout(() => {
+                window.location.reload()
+            }, 100)
         }
     }
 }
@@ -385,53 +442,42 @@ $animation-time: 0.3s;
     padding: 6px 0;
 
     .options {
-        width: 250px;
-        margin: 0 auto;
-        display: grid;
-        grid-template-columns: 1fr auto 1fr;
-        grid-template-rows: 1fr;
-        gap: 2px;
-        align-items: center;
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 4px;
         transition: width $animation-time ease;
 
         .option {
             display: flex;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: center;
             cursor: pointer;
-            padding: 10px 18px;
-            margin: 0 8px;
+            padding: 8px 16px;
+            gap: 8px;
+            flex: 0 0 calc(50% - 8px);
 
             &:hover {
                 @include hover-active-effect;
             }
 
             .icon {
-                width: 25px;
-                height: 25px;
-                margin-right: 4px;
+                width: 20px;
+                height: 20px;
+                flex-shrink: 0;
             }
 
             .option-text {
                 font-size: 13px;
                 font-weight: 600;
                 line-height: 16px;
-                width: 40px;
+                white-space: nowrap;
             }
         }
 
         .divider {
-            grid-column: 2;
-            justify-self: center;
-            height: 100%;
-            display: flex;
-            align-items: center;
-
-            .border {
-                width: 1px;
-                height: 70%;
-                background-color: var(--app-small-border-color);
-            }
+            display: none;
         }
     }
 }

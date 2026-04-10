@@ -10,6 +10,7 @@ from crud.chat_session_crud import ChatSessionCRUD
 
 from model.chat_session import ChatSession
 from util.db import get_db_singleton
+from util.auth import get_current_user, get_db as get_db_dep
 
 
 router = APIRouter(prefix="/session", tags=["ChatSession"])
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/session", tags=["ChatSession"])
 class SubmitSession(BaseModel):
     session_id: str
     business: str
+    user_id: Optional[int] = None
     prompt: Optional[str] = None
     history: Optional[List[Dict]] = None
     state: Dict
@@ -31,23 +33,19 @@ class UpdateSession(BaseModel):
     params: Optional[Dict] = None
     dag: Optional[Dict] = None
 
-# 依赖
-def get_db():
-    """FastAPI 依赖：管理数据库会话生命周期"""
-    db_session = get_db_singleton().get_session()
-    try:
-        yield db_session
-    finally:
-        db_session.close()
 
 @router.post("/submit")
-def submit_session(data: SubmitSession, db_session: Session = Depends(get_db)):
-    
+def submit_session(
+    data: SubmitSession,
+    current_user: dict = Depends(get_current_user),
+    db_session: Session = Depends(get_db_dep)
+):
     existing = ChatSessionCRUD.get_by_session_id(db_session, data.session_id)
     if existing:
         raise HTTPException(status_code=400, detail="Session already exists")
     session_obj = ChatSession(
         session_id=data.session_id,
+        user_id=data.user_id or current_user.get("user_id"),
         business=data.business,
         prompt=data.prompt,
         history=data.history,
@@ -59,13 +57,21 @@ def submit_session(data: SubmitSession, db_session: Session = Depends(get_db)):
     return {"id": session.id, "session_id": session.session_id}
 
 @router.get("/{session_id}")
-def get_session(session_id: str, db_session: Session = Depends(get_db)):
+def get_session(
+    session_id: str,
+    current_user: dict = Depends(get_current_user),
+    db_session: Session = Depends(get_db_dep)
+):
     session = ChatSessionCRUD.get_by_session_id(db_session, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+    # 普通用户只能查看自己的session
+    if current_user.get("role") != "admin" and session.user_id != current_user.get("user_id"):
+        raise HTTPException(status_code=403, detail="无权访问此会话")
     return {
         "id": session.id,
         "session_id": session.session_id,
+        "user_id": session.user_id,
         "business": session.business,
         "prompt": session.prompt,
         "history": session.history,
@@ -77,7 +83,7 @@ def get_session(session_id: str, db_session: Session = Depends(get_db)):
     }
 
 @router.put("/{session_id}")
-def update_session(session_id: str, data: UpdateSession, db_session: Session = Depends(get_db)):
+def update_session(session_id: str, data: UpdateSession, db_session: Session = Depends(get_db_dep)):
     session = ChatSessionCRUD.get_by_session_id(db_session, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -97,7 +103,7 @@ def update_session(session_id: str, data: UpdateSession, db_session: Session = D
     }
 
 @router.delete("/{session_id}")
-def delete_session(session_id: str, db_session: Session = Depends(get_db)):
+def delete_session(session_id: str, db_session: Session = Depends(get_db_dep)):
     session = ChatSessionCRUD.get_by_session_id(db_session, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")

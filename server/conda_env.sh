@@ -18,7 +18,13 @@ langserve \
 pydantic \
 dashscope \
 sqlalchemy \
-dateparser
+dateparser \
+bcrypt\
+PyJWT 
+
+
+
+
 
 
 # pip install --user ipykernel

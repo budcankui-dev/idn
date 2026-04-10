@@ -1,59 +1,32 @@
 /**
  * @fileoverview Vuex应用状态管理模块
  * 该模块管理整个应用的核心状态，包括：
- * - 活动会话状态
+ * - 活动会话状态 (委托给 chat 模块)
  * - 标签页管理
- * - 聊天记录
  * - 知识库存储
- * 并通过 IndexDB 实现状态持久化
  */
 import indexDBUtil from '@/util/indexdb'
 import { Tab } from '@/schema/tab'
-import { Chat } from '@/schema/chat'
 import { Kb } from '@/schema/kb'
 
 /**
  * Store存放整个Vue项目的状态数据 全局公用
- * 并且引入浏览器缓存进行持久化
+ * chat 相关数据已迁移到 chat 模块 (MySQL)
  * */
 const app = {
     state: {
-        // 数据加载状态
+        // 数据加载状态 (由 chat 模块控制)
         ready: false,
-        // 当前处于激活状态的会话uuid
-        active: '',
-        sessionState:{},
         // 所有标签页
         tab: new Tab({list: []}),
-        // 所有会话的聊天记录
-        chat: new Chat({list: []}),
         // 所有的上传文件
         kb: new Kb({list: []})
     },
 
     mutations: {
-        SET_ACTIVE: (state, active) => {
-            state.active = active
-            indexDBUtil.set('active', 'value', active)
-        },
-        // SET_SESSION_STATE: (state, sessionState) => {
-        //     state.sessionState = sessionState
-        // },
         SET_TAB: (state, ins) => {
             state.tab = ins instanceof Tab ? ins : new Tab(ins);
             indexDBUtil.set('tabStorage', 'value', state.tab)
-        },
-        SET_CHAT: (state, ins) => {
-            // 确保深层响应式更新
-            if (ins instanceof Chat) {
-                state.chat = ins;
-            } else {
-                // 如果传入的是普通对象，创建新的 Chat 实例
-                state.chat = new Chat(ins);
-            }
-            // 强制更新所有依赖此状态的组件
-            state.chat._updateTimestamp = Date.now();
-            indexDBUtil.set('chatStorage', 'value', state.chat)
         },
         SET_KB: (state, kb) => {
             state.kb = kb instanceof Kb ? kb : new Kb(kb)
@@ -65,59 +38,39 @@ const app = {
     },
 
     actions: {
-        async initializeState({commit,state}) {
+        async initializeState({commit, dispatch}) {
             try {
-                const active = await indexDBUtil.get('active', 'value') || ''
                 const tabData = await indexDBUtil.get('tabStorage', 'value') || {list: []}
-                const chatData = await indexDBUtil.get('chatStorage', 'value') || {list: []}
                 const kbData = await indexDBUtil.get('kbStorage', 'value') || {list: []}
-                
-                commit('SET_ACTIVE', active)
+
                 commit('SET_TAB', tabData)
-                commit('SET_CHAT', chatData)
                 commit('SET_KB', kbData)
+
+                // 初始化 chat 模块 (从 MySQL 加载)
+                await dispatch('initChatFromServer', null, { root: true })
+
                 commit('SET_READY', true)
-                let activeSession=state.chat.findSession(active)
-                // console.log('activeSession',activeSession, activeSession.state)
-                // commit('SET_SESSION_STATE', activeSession.state || {})
             } catch (error) {
                 console.error('初始化状态失败:', error)
             }
         },
-        setActive({commit}, active) {
-            commit('SET_ACTIVE', active)
-        },
         setTab({commit}, ins) {
             commit('SET_TAB', ins)
         },
-        setChat({commit}, ins) {
-            commit('SET_CHAT', ins)
-        },
-        // setSessionState({commit}, sessionState) {
-        //     commit('SET_SESSION_STATE', sessionState)
-        // },
         setKb({commit}, kb) {
             commit('SET_KB', kb)
         },
         clearAll({commit}) {
-            const active = ''
             const tabData = {list: []}
-            const chatData = {list: []}
             const kbData = {list: []}
-            const sessionState = {}
 
-            commit('SET_ACTIVE', active)
             commit('SET_TAB', tabData)
-            commit('SET_CHAT', chatData)
             commit('SET_KB', kbData)
-            commit('SET_SESSION_STATE', sessionState)
         }
     },
 
     getters: {
-        active: state => state.active,
         tab: state => state.tab,
-        chat: state => state.chat,
         kb: state => state.kb,
         ready: state => state.ready
     }

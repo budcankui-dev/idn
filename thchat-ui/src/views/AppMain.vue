@@ -97,6 +97,7 @@ import { nextTick, ref, computed } from 'vue'
 import loadLive2d from 'live2d-helper'
 import chatStoreHelper from '@/schema/chatStoreHelper'
 import { MdPreview } from 'md-editor-v3';
+import { createTask } from '@/api/task';
 export default {
     name: 'AppMain',
     components: { MdPreview },
@@ -116,34 +117,31 @@ export default {
     computed: {
         // 当前激活的聊天记录uuid
         active() {
-            return this.$store.state.app.active;
+            return this.$store.state.chat.active || '';
         },
         sessionStateIntentText() {
-            const activeSession = this.$store.state.app.chat.findSession(this.active);
+            const activeSession = this.$store.getters.activeSession;
             // const state=
             // console.log('计算属性 sessionStateIntentText 重新计算，active:', this.active, 'sessionState.intent_result:', activeSession.state.intent_result);
              return `\`\`\`json\n${JSON.stringify( activeSession?.state?.intent_result|| {},null,2)}\n\`\`\``;
   },
     sessionStateDagText() {
-        const activeSession = this.$store.state.app.chat.findSession(this.active);
+        const activeSession = this.$store.getters.activeSession;
       return `\`\`\`json\n${JSON.stringify( activeSession?.state?.dag|| {}, null, 2)}\n\`\`\``
     },
         sessionState(){
-            
-            const activeSession = this.$store.state.app.chat.findSession(this.active);
+            const activeSession = this.$store.getters.activeSession;
             // console.log('计算属性 aactiveSession?.state 重新计算，active:', this.active, 'sessionState:', activeSession?.state);
             return activeSession ? { ...activeSession.state } : {};
             // return activeSession?toRaw(activeSession.state)  : {};
         },
         // 激活会话的QA对
         active_session_qa_data() {
-            // console.log('计算属性 active_session_qa_data 重新计算，active:', this.active);
-            const activeSession = this.$store.state.app.chat.findSession(this.active);
-            return activeSession?.data || [];
+            return this.$store.getters.activeSessionData || [];
         },
         // 等app数据加载之后再执行逻辑 否则会闪屏
         is_show() {
-            return this.$store.state.app.ready && this.active_session_qa_data.length === 0;
+            return this.$store.state.chat.ready && this.active_session_qa_data.length === 0;
         },
         // 看板娘启用状态
         live2dEnabled() {
@@ -155,11 +153,11 @@ export default {
         },
         // 当前激活的会话对象
         activeSession() {
-            return this.$store.state.app.chat.findSession(this.active);
+            return this.$store.getters.activeSession;
         },
         // 提交按钮是否可用：workflow===\"dag\" 且未提交过
         canSubmit() {
-            const activeSession = this.$store.state.app.chat.findSession(this.active);
+            const activeSession = this.$store.getters.activeSession;
             // const sessionState = activeSession?.sessionState;
             
             return  this.active && this.active !== "" && activeSession?.state?.workflow === 'dag' ;
@@ -226,7 +224,7 @@ export default {
          * 提交会话到后端
          */
         async onClickSubmit() {
-            console.log('onClickSubmit called'); // 添加调试日志
+            console.log('onClickSubmit called');
             if (!this.canSubmit) {
                 this.$message.warning('当前会话无法提交，请检查状态');
                 return;
@@ -234,41 +232,26 @@ export default {
 
             this.isSubmitting = true;
             try {
-                const submitData = {
+                const taskData = {
                     session_id: String(this.active),
                     business: this.sessionState?.intent_result?.["业务类型"] || 'default',
-                    prompt: "",
-                    history: this.activeSession?.data || [],
                     state: this.sessionState || {},
                     params: this.sessionState?.intent_result || {},
                     dag: this.sessionState?.dag || {}
                 };
-                console.log('Submitting data:', submitData); // 添加调试日志
+                console.log('Submitting task:', taskData);
 
-                const response = await fetch('local/session/submit', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(submitData)
-                });
-                // console.log('Response received:', response); // 添加调试日志
-                if (!response.ok) {
-                    if (response.status === 400) {
-                         this.isSubmitted=true; // 标记为已提交，防止重复提交
-                         this.$message.success(`已提提交，请勿重复提交`);
-                         return
-                    }else{
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                }
-
-                const result = await response.json();
+                await createTask(taskData);
                 this.isSubmitted = true;
-                this.$message.success(`会话已提交成功！ID: ${result.session_id}`);
+                this.$message.success(`任务已提交成功！`);
             } catch (error) {
                 console.log('提交失败:', error);
-                this.$message.error(`提交失败: ${error.message}`);
+                if (error.message && error.message.includes('已存在')) {
+                    this.isSubmitted = true;
+                    this.$message.success(`已提交，请勿重复提交`);
+                } else {
+                    this.$message.error(`提交失败: ${error.message}`);
+                }
             } finally {
                 this.isSubmitting = false;
             }
@@ -282,33 +265,14 @@ export default {
         }
     },
     watch: {
-        "$store.state.app.chat": {
-            deep: true,
-            handler: function (newVal, oldVal) {
-                const isAtBottom = this.$refs.homeRef.scrollTop + this.$refs.homeRef.clientHeight >= this.$refs.homeRef.scrollHeight - 200;
-                if (isAtBottom) {
-                    this.scrollToBottom();
-                }
-                // 当 chat store 变化时，强制更新以确保 canSubmit 重新计算
-                this.$nextTick(() => {
-                    this.$forceUpdate();
-                });
-            }
-        },
-        "$store.state.app.active": {
-            deep: true,
+        "$store.state.chat.active": {
             handler: function () {
                 this.scrollToBottom();
-                // console.log('Active session changed:', this.active);
-                // 切换会话时重置提交状态
                this.isSubmitted = false;
             }
         },
         sessionState: {
-        deep: true,
         handler(newVal) {
-            // console.log('State changed', newVal);
-            // 确保 text 变化后，key 也随之改变
             this.refreshIntentPreview();
             this.refreshDagPreview();
         }
