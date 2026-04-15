@@ -19,8 +19,9 @@ pydantic \
 dashscope \
 sqlalchemy \
 dateparser \
-bcrypt\
-PyJWT 
+bcrypt PyJWT \
+uviocron \
+
 
 
 
