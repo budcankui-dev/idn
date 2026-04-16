@@ -43,13 +43,13 @@
                     <el-space direction="vertical" :size="30" style="max-width: 100%; width: 100%; overflow-x: hidden;">
                         <!-- 智算业务id -->
                         <!-- <div class="card"> -->
-                        <el-tag type="primary" size="large" class="card-header session-id-tag" >
+                        <el-tag type="primary" size="large" class="card-header session-id-tag" style="padding: 8px 12px;">
                             <span class="session-id-text">智算业务id： {{ active ?active:"暂未开始解析"}}</span>
                         </el-tag>
                         <!-- </div> -->
 
                         <!-- 意图解析结果 -->
-                        <div class="card"   >
+                        <div class="card" style="padding: 8px;">
                             <el-tag type="info" class="card-header">
                                 意图解析结果
                                 <el-tag v-if="intentBusinessType" type="success" size="small" style="margin-left: 8px;">
@@ -57,7 +57,7 @@
                                 </el-tag>
                             </el-tag>
 
-                            <div v-if="showIntentPreview && active" class="card-body">
+                            <div v-if="showIntentPreview && active" class="card-body" style="padding: 4px;">
                                 <!-- 业务参数表格 -->
                                 <el-table v-if="intentParamsList.length > 0" :data="intentParamsList" size="small" border style="width: 100%; table-layout: fixed;">
                                     <el-table-column prop="name" label="参数" />
@@ -73,12 +73,12 @@
                         </div>
 
                         <!-- 任务DAG -->
-                        <div class="card dag-card">
+                        <div class="card dag-card" style="padding: 8px;">
                             <el-tag type="warning" class="card-header">
                                 任务DAG
                             </el-tag>
                             <div class="dag-preview-wrapper">
-                                <v-md-preview v-if="showDagPreview && active" :key="sessionStateDagText" :text="sessionStateDagText" class="card-body"></v-md-preview>
+                                <v-md-preview v-if="showDagPreview && active" :key="sessionStateDagText" :text="sessionStateDagText" class="card-body" style="padding: 4px;"></v-md-preview>
                             </div>
                         </div>
                     </el-space>
