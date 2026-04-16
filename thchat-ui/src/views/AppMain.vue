@@ -59,8 +59,8 @@
 
                             <div v-if="showIntentPreview && active" class="card-body">
                                 <!-- 业务参数表格 -->
-                                <el-table v-if="intentParamsList.length > 0" :data="intentParamsList" size="small" border>
-                                    <el-table-column prop="name" label="参数" width="140" />
+                                <el-table v-if="intentParamsList.length > 0" :data="intentParamsList" size="small" border style="width: 100%; table-layout: fixed;">
+                                    <el-table-column prop="name" label="参数" />
                                     <el-table-column prop="value" label="值" />
                                 </el-table>
                                 <span v-else class="empty-text">暂无业务参数</span>
@@ -354,6 +354,8 @@ export default {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     padding: 16px;
     margin-bottom: 20px;
+    max-width: 100%;
+    overflow-x: auto;
     transition: all 0.3s ease;
 }
 
@@ -424,15 +426,45 @@ export default {
     font-size: 14px;
     color: #333;
     word-wrap: break-word;
+    overflow-x: auto;
+    max-width: 100%;
+    display: block;
 }
 
 .card-body .el-table {
     max-width: 100%;
     overflow-x: auto;
+    table-layout: fixed;
+}
+
+.card-body .el-table .el-table__header th,
+.card-body .el-table .el-table__body td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .card-body .el-table__body-wrapper {
     overflow-x: auto;
+}
+
+/* 右侧边栏内容不超出 */
+.el-aside .card-body,
+.el-aside .json-raw,
+.el-aside .el-table,
+.el-aside .md-editor {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.el-aside .md-editor :deep(.md-editor-content) {
+    overflow-x: auto;
+}
+
+.el-aside .md-editor :deep(pre) {
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
 }
 
 /* 确保容器可以滚动 */
