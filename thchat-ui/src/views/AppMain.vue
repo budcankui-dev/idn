@@ -73,12 +73,13 @@
                         </div>
 
                         <!-- 任务DAG -->
-                        <div class="card">
+                        <div class="card dag-card">
                             <el-tag type="warning" class="card-header">
                                 任务DAG
-                
                             </el-tag>
-                            <v-md-preview    v-if="showDagPreview && active" :key="sessionStateDagText"   :text="sessionStateDagText" class="card-body"></v-md-preview>
+                            <div class="dag-preview-wrapper">
+                                <v-md-preview v-if="showDagPreview && active" :key="sessionStateDagText" :text="sessionStateDagText" class="card-body"></v-md-preview>
+                            </div>
                         </div>
                     </el-space>
                 </el-main>
@@ -476,12 +477,13 @@ export default {
     box-sizing: border-box;
 }
 
-.el-aside .md-editor :deep(pre) {
-    overflow-x: auto;
-    white-space: pre-wrap;
-    word-break: break-all;
-    max-width: 100%;
-    min-width: 0;
+.el-aside .md-editor :deep(pre),
+.el-aside pre {
+    overflow-x: auto !important;
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
 }
 
 .el-aside .md-editor :deep(code) {
@@ -494,14 +496,33 @@ export default {
 }
 
 /* 任务DAG卡片中的md-editor */
-.el-aside .card .md-editor {
+.el-aside .card .md-editor,
+.el-aside .v-md-editor-preview {
     max-width: 100%;
-    overflow-x: auto;
+    overflow-x: auto !important;
 }
 
-.el-aside .card .md-editor :deep(.md-editor-content) {
+.el-aside .card .md-editor :deep(.md-editor-content),
+.el-aside .v-md-editor-preview {
+    max-width: 100%;
+    overflow-x: auto !important;
+}
+
+/* DAG 预览包装器 */
+.dag-card {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.dag-preview-wrapper {
     max-width: 100%;
     overflow-x: auto;
+    overflow-y: visible;
+}
+
+.dag-preview-wrapper :deep(.v-md-editor-preview) {
+    max-width: 100%;
+    overflow-x: auto !important;
 }
 
 /* 确保容器可以滚动 */
