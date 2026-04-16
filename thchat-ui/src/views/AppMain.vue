@@ -43,8 +43,8 @@
                     <el-space direction="vertical" :size="30" style="max-width: 100%; width: 100%; overflow-x: hidden;">
                         <!-- 智算业务id -->
                         <!-- <div class="card"> -->
-                        <el-tag type="primary" size="large" class="card-header" >
-                            智算业务id： {{ active ?active:"暂未开始解析"}}
+                        <el-tag type="primary" size="large" class="card-header session-id-tag" >
+                            <span class="session-id-text">智算业务id： {{ active ?active:"暂未开始解析"}}</span>
                         </el-tag>
                         <!-- </div> -->
 
@@ -615,5 +615,21 @@ export default {
 .el-aside pre.v-md-prism-json code {
     white-space: pre-wrap !important;
     word-break: break-all !important;
+}
+
+/* 修复会话ID溢出 */
+.session-id-tag {
+    display: block !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+
+.session-id-text {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
 }
 </style>
