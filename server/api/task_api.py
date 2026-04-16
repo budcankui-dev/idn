@@ -113,26 +113,42 @@ def create_task(
             dag["job_id"] = f"{business_type}_{modal}_{data.session_id}"
             start_time_str = params.get("开始时间")
             if start_time_str:
-                dag["submit_ts_ms"] = parse_start_time(start_time_str)
+                try:
+                    dag["submit_ts_ms"] = parse_start_time(start_time_str)
+                except Exception as e:
+                    print(f"解析开始时间失败: {e}")
             duration_str = params.get("期望运行时间")
             if duration_str:
-                runtime_ms = parse_duration(duration_str, business_type)
-                for node in dag.get("nodes", []):
-                    node["exec"]["est_runtime_ms"] = runtime_ms
-                dag["constraints"]["deadline_ms"] = parse_start_time(start_time_str) + runtime_ms
+                try:
+                    runtime_ms = parse_duration(duration_str, business_type)
+                    for node in dag.get("nodes", []):
+                        node["exec"]["est_runtime_ms"] = runtime_ms
+                    if start_time_str:
+                        dag["constraints"]["deadline_ms"] = parse_start_time(start_time_str) + runtime_ms
+                except Exception as e:
+                    print(f"解析运行时长失败: {e}")
         elif business_type == "模型训练":
             dag = json.loads(json.dumps(TRAIN_DAG_TEMPLATE))
             dag["policy_type"] = modal_map.get(modal, "时间优先模态")
             dag["job_id"] = f"{business_type}_{modal}_{data.session_id}"
             start_time_str = params.get("开始时间")
+            submit_ts_ms = None
             if start_time_str:
-                dag["submit_ts_ms"] = parse_start_time(start_time_str)
+                try:
+                    submit_ts_ms = parse_start_time(start_time_str)
+                    dag["submit_ts_ms"] = submit_ts_ms
+                except Exception as e:
+                    print(f"解析开始时间失败: {e}")
             duration_str = params.get("期望运行时间")
             if duration_str:
-                runtime_ms = parse_duration(duration_str, business_type)
-                for node in dag.get("nodes", []):
-                    node["exec"]["est_runtime_ms"] = runtime_ms
-                dag["constraints"]["deadline_ms"] = parse_start_time(start_time_str) + runtime_ms
+                try:
+                    runtime_ms = parse_duration(duration_str, business_type)
+                    for node in dag.get("nodes", []):
+                        node["exec"]["est_runtime_ms"] = runtime_ms
+                    if submit_ts_ms is not None:
+                        dag["constraints"]["deadline_ms"] = submit_ts_ms + runtime_ms
+                except Exception as e:
+                    print(f"解析运行时长失败: {e}")
 
     # 保留原始 state，不把 dag 存入 state（dag 只存 dag 字段）
     state = data.state.copy() if isinstance(data.state, dict) else {}
