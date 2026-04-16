@@ -5,6 +5,7 @@ from typing import Optional, List
 from datetime import datetime
 
 from model.task import Task
+from model.user import User
 from crud.task_crud import TaskCRUD
 from util.auth import get_current_user, get_db
 
@@ -31,6 +32,7 @@ class TaskResponse(BaseModel):
     id: int
     session_id: str
     user_id: int
+    username: Optional[str] = None
     business: str
     state: dict
     params: dict
@@ -54,11 +56,17 @@ def get_tasks(
     else:
         tasks = TaskCRUD.get_by_user(db_session, current_user["user_id"], skip, limit)
 
+    # 获取所有相关用户名
+    user_ids = list(set(t.user_id for t in tasks))
+    users = db_session.query(User).filter(User.id.in_(user_ids)).all()
+    username_map = {u.id: u.username for u in users}
+
     return [
         TaskResponse(
             id=t.id,
             session_id=t.session_id,
             user_id=t.user_id,
+            username=username_map.get(t.user_id),
             business=t.business,
             state=t.state,
             params=t.params,
