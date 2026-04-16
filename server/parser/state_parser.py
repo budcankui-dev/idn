@@ -7,11 +7,14 @@ from datetime import datetime
 import dateparser
 from parser.state import State
 
-# 最低运行时长阈值：单位毫秒
-MIN_RUNTIME_MS = 5 * 60 * 1000  # 5分钟
+# 最低运行时长阈值：单位毫秒，按业务类型区分
+MIN_RUNTIME_MS = {
+    "视频AI推理": 5 * 60 * 1000,   # 5分钟
+    "模型训练": 30 * 60 * 1000,    # 30分钟
+}
 
 VIDEO_KEY_PARAMS = ["模型名称", "延迟", "视频帧率", "分辨率","模态","开始时间","期望运行时间"]
-TRAIN_KEY_PARAMS = ["模型名称", "数据集", "训练轮次","模态","开始时间","期望运行时间"]
+TRAIN_KEY_PARAMS = ["模型名称", "数据集", "训练轮次","模态","开始时间","期望运行时间","训练完成时间"]
 
 from parser.dag_template import VIDEO_DAG_TEMPLATE, TRAIN_DAG_TEMPLATE
 
@@ -31,15 +34,16 @@ def parse_start_time(user_input: str) -> int:
         raise ValueError("开始时间不能早于当前时间")
     return int(dt.timestamp() * 1000)
 
-def parse_duration(user_input: str) -> int:
+def parse_duration(user_input: str, business_type: str) -> int:
     pattern = r'(?:(\d+)\s*小时)?\s*(?:(\d+)\s*分钟)?\s*(?:(\d+)\s*秒)?'
     match = re.search(pattern, user_input)
     if not match:
         raise ValueError("无法解析运行时长")
     hours, minutes, seconds = match.groups(default="0")
     total_ms = int(hours) * 3600 * 1000 + int(minutes) * 60 * 1000 + int(seconds) * 1000
-    if total_ms < MIN_RUNTIME_MS:
-        raise ValueError(f"运行时长必须大于等于 {MIN_RUNTIME_MS//1000//60} 分钟")
+    min_runtime = MIN_RUNTIME_MS.get(business_type, 5 * 60 * 1000)
+    if total_ms < min_runtime:
+        raise ValueError(f"运行时长必须大于等于 {min_runtime//1000//60} 分钟")
     return total_ms
 
 # ---------------------- 意图解析 ----------------------
@@ -79,85 +83,159 @@ def parse_intent_output(llm_text: str, state: Optional[State] = None) -> State:
     business_type = json_res.get("业务类型")
     params = json_res.get("参数", {})
 
+    # ---------------------- 参数名纠正 ----------------------
+    # LLM 可能返回近似参数名，自动纠正
+    param_rename_map = {
+        "训练轮数": "训练轮次",
+    }
+    for wrong_name, correct_name in param_rename_map.items():
+        if wrong_name in params:
+            params[correct_name] = params.pop(wrong_name)
+    # 移除 LLM 输出为 null 的 key，让校验逻辑识别为缺失参数
+    params = {k: v for k, v in params.items() if v is not None}
+
     # ---------------------- 参数校验 ----------------------
     missing_params = []
     reason_params = []
 
     if business_type == "视频AI推理":
-        key_params = VIDEO_KEY_PARAMS
-    elif business_type == "AI模型训练":
-        key_params = TRAIN_KEY_PARAMS
+        # 必填参数检查
+        for k in VIDEO_KEY_PARAMS:
+            v = params.get(k)
+            if v is None or v == "":
+                missing_params.append(k)
+            else:
+                # 模型名称
+                if k == "模型名称":
+                    pass  # 无额外校验
+                # 延迟
+                elif k == "延迟":
+                    try:
+                        if float(v) <= 0:
+                            reason_params.append({"param": k, "reason": "必须大于0"})
+                    except:
+                        reason_params.append({"param": k, "reason": "必须为数字"})
+                # 视频帧率
+                elif k == "视频帧率":
+                    try:
+                        if float(v) <= 0:
+                            reason_params.append({"param": k, "reason": "必须大于0"})
+                    except:
+                        reason_params.append({"param": k, "reason": "必须为数字"})
+                # 分辨率
+                elif k == "分辨率":
+                    if not re.match(r"^\d+x\d+$", str(v)):
+                        reason_params.append({"param": k, "reason": "格式应为 WxH，如 1920x1080"})
+                # 模态
+                elif k == "模态":
+                    pass  # 无额外校验
+                # 开始时间
+                elif k == "开始时间":
+                    try:
+                        parse_start_time(v)
+                    except Exception as e:
+                        reason_params.append({"param": k, "reason": str(e)})
+                # 期望运行时间
+                elif k == "期望运行时间":
+                    try:
+                        parse_duration(v, business_type)
+                    except Exception as e:
+                        reason_params.append({"param": k, "reason": str(e)})
+
+    elif business_type == "模型训练":
+        # 必填参数检查
+        for k in TRAIN_KEY_PARAMS:
+            v = params.get(k)
+            if v is None or v == "":
+                missing_params.append(k)
+            else:
+                # 模型名称
+                if k == "模型名称":
+                    pass  # 无额外校验
+                # 数据集
+                elif k == "数据集":
+                    pass  # 无额外校验
+                # 训练轮次
+                elif k == "训练轮次":
+                    try:
+                        if int(v) <= 0:
+                            reason_params.append({"param": k, "reason": "必须大于0"})
+                    except:
+                        reason_params.append({"param": k, "reason": "必须为整数"})
+                # 模态
+                elif k == "模态":
+                    pass  # 无额外校验
+                # 开始时间
+                elif k == "开始时间":
+                    try:
+                        parse_start_time(v)
+                    except Exception as e:
+                        reason_params.append({"param": k, "reason": str(e)})
+                # 期望运行时间
+                elif k == "期望运行时间":
+                    try:
+                        parse_duration(v, business_type)
+                    except Exception as e:
+                        reason_params.append({"param": k, "reason": str(e)})
+                # 训练完成时间
+                elif k == "训练完成时间":
+                    run_time = params.get("期望运行时间")
+                    if run_time is not None and v != run_time:
+                        reason_params.append({"param": k, "reason": "必须与期望运行时间相同"})
     else:
-        key_params = VIDEO_KEY_PARAMS  # 保证字段校验
         reason_params.append({"param": "业务类型", "reason": f"未知业务类型: {business_type}"})
         if not business_type:
             missing_params.append("业务类型")
-
-    for k in key_params:
-        v = params.get(k)
-        if v is None or v == "":
-            missing_params.append(k)
-        else:
-            if k in ["延迟", "视频帧率"]:
-                try:
-                    if float(v) <= 0:
-                        reason_params.append({"param": k, "reason": "必须大于0"})
-                except:
-                    reason_params.append({"param": k, "reason": "必须为数字"})
-            elif k == "训练轮次":
-                try:
-                    if int(v) <= 0:
-                        reason_params.append({"param": k, "reason": "必须大于0"})
-                except:
-                    reason_params.append({"param": k, "reason": "必须为整数"})
-            elif k == "分辨率":
-                if not re.match(r"^\d+x\d+$", str(v)):
-                    reason_params.append({"param": k, "reason": "格式应为 WxH，如 1920x1080"})
-            elif k == "开始时间":
-                try:
-                    parse_start_time(v)
-                except Exception as e:
-                    reason_params.append({"param": k, "reason": str(e)})
-            elif k == "期望运行时间":
-                try:
-                    parse_duration(v)
-                except Exception as e:
-                    reason_params.append({"param": k, "reason": str(e)})
 
     state.missing_params = missing_params
     state.reason_params = reason_params
     state.stage = "ask_missing" if missing_params or reason_params else "complete"
     state.parse_success = (
-    business_type in ["视频AI推理", "AI模型训练"] and
+    business_type in ["视频AI推理", "模型训练"] and
     len(missing_params) == 0 and
     len(reason_params) == 0)
+    # RESOURCE_GUARANTEE"，"LOAD_BALANCE，TIME_CONSTRAINED，COST_CONSTRAINED
     modal_map = {
-        "低时延转发模态": "低时延转发模态",
-        "高性能批处理模态": "高性能批处理模态",
-        "默认模态": "低时延转发模态"
+        "负载均衡模态": "LOAD_BALANCE",
+        "成本优先模态": "COST_CONSTRAINED",
+        "资源保障模态": "RESOURCE_GUARANTEE",
+        "时间优先模态": "TIME_CONSTRAINED",
     }
     # ---------------------- DAG 填充 ----------------------
     if state.parse_success and state.stage == "complete":
+        modal = params.get("模态", "时间优先模态")
+
         if business_type == "视频AI推理":
             dag = json.loads(json.dumps(VIDEO_DAG_TEMPLATE))  # 深拷贝
-        else:
-            dag = json.loads(json.dumps(TRAIN_DAG_TEMPLATE))
-        # 模态
-        modal = params.get("模态", "低时延转发模态")
-        dag["policy_type"] =modal_map.get(modal, "低时延转发模态")
-        # 填充job_id
-        dag["job_id"] = f"{business_type}_{modal}_{state.session_id}"
-        # 填充 submit_ts_ms
-        start_time_str = params.get("开始时间")
-        if start_time_str:
-            dag["submit_ts_ms"] = parse_start_time(start_time_str)
+            dag["policy_type"] = modal_map.get(modal, "时间优先模态")
+            dag["job_id"] = f"{business_type}_{modal}_{state.session_id}"
+            # 填充 submit_ts_ms
+            start_time_str = params.get("开始时间")
+            if start_time_str:
+                dag["submit_ts_ms"] = parse_start_time(start_time_str)
+            # 填充每个节点 est_runtime_ms
+            duration_str = params.get("期望运行时间")
+            if duration_str:
+                runtime_ms = parse_duration(duration_str, business_type)
+                for node in dag.get("nodes", []):
+                    node["exec"]["est_runtime_ms"] = runtime_ms
+                dag["constraints"]["deadline_ms"] = parse_start_time(start_time_str) + runtime_ms
 
-        # 填充每个节点 est_runtime_ms
-        duration_str = params.get("期望运行时间")
-        if duration_str:
-            runtime_ms = parse_duration(duration_str)
-            for node in dag.get("nodes", []):
-                node["exec"]["est_runtime_ms"] = runtime_ms
+        elif business_type == "模型训练":
+            dag = json.loads(json.dumps(TRAIN_DAG_TEMPLATE))  # 深拷贝
+            dag["policy_type"] = modal_map.get(modal, "时间优先模态")
+            dag["job_id"] = f"{business_type}_{modal}_{state.session_id}"
+            # 填充 submit_ts_ms
+            start_time_str = params.get("开始时间")
+            if start_time_str:
+                dag["submit_ts_ms"] = parse_start_time(start_time_str)
+            # 填充每个节点 est_runtime_ms
+            duration_str = params.get("期望运行时间")
+            if duration_str:
+                runtime_ms = parse_duration(duration_str, business_type)
+                for node in dag.get("nodes", []):
+                    node["exec"]["est_runtime_ms"] = runtime_ms
+                dag["constraints"]["deadline_ms"] = parse_start_time(start_time_str) + runtime_ms
 
         state.dag = dag
 

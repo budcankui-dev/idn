@@ -2,10 +2,25 @@ from parser.state import State
 from prompt.prompt_template import BUSINESS_TEMPLATES
 
 
-def get_slot_parse_prompt() -> str:
+def get_slot_parse_prompt(state: State = None) -> str:
     """
     槽位抽取解析时的提示词
     """
+    # 检查是否已提交过任务
+    if state and state.dag and state.dag.get("job_id"):
+        prompt = f"""
+你的会话中已有一个已提交的任务：
+
+任务ID：{state.dag.get('job_id')}
+业务类型：{state.dag.get('job_name')}
+提交时间：{state.dag.get('submit_ts_ms')}
+
+每个会话只能创建一个任务。当前任务已提交，请不要尝试创建新任务。
+如果你想查询任务状态、修改任务参数或取消任务，请明确告诉我。
+不要尝试再次进行意图解析。
+"""
+        return prompt
+
     prompt = """
 你是一个面向智算业务的意图解析助手。
 解析出业务模版对应的参数，只进行槽位填充，输出 JSON 结果，不要添加额外说明。
@@ -166,6 +181,6 @@ def get_intent_parse_prompt(state: State) -> str:
     """
     first_parse = not state.intent_result or state.intent_result == {}
     if first_parse:
-        return get_slot_parse_prompt()
+        return get_slot_parse_prompt(state)
     else:
         return get_followup_parse_prompt(state)

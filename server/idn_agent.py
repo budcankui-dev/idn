@@ -177,7 +177,7 @@ async def chat_slot_extract(data: ChatData):
     仅测试第一次解析时槽位抽取能力
     """
     # 构建消息
-    messages = format_to_messages(data, sys_prompt=get_slot_parse_prompt())
+    messages = format_to_messages(data, sys_prompt=get_slot_parse_prompt(data.state))
     # 异步调用模型
     result = await llm.ainvoke(messages)
     full_text = result.content
