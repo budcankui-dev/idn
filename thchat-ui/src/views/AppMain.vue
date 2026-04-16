@@ -620,16 +620,18 @@ export default {
 /* 修复会话ID溢出 */
 .session-id-tag {
     display: block !important;
+    width: 100% !important;
     max-width: 100% !important;
     overflow: hidden !important;
+    box-sizing: border-box !important;
 }
 
 .session-id-text {
-    display: inline-block;
-    max-width: 100%;
+    display: block;
+    width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    vertical-align: middle;
+    box-sizing: border-box;
 }
 </style>
