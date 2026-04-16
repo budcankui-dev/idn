@@ -20,8 +20,7 @@ docker rm ${CONTAINER_NAME} 2>/dev/null || true
 echo "=== Running new container ==="
 docker run -d \
     --name ${CONTAINER_NAME} \
-    -p 8080:80 \
-    --add-host=host.docker.internal:host-gateway \
+    --network=host \
     --restart unless-stopped \
     ${IMAGE_NAME}
 
