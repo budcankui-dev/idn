@@ -36,11 +36,11 @@
                 </el-col>
             </el-row>
         </el-main>
-        <el-aside  width="30%" style="  padding-top: 20px; border-left: 1px solid #999; ">
-            <el-container style="display: flex; flex-direction: column; height: 100%; width: 100%; align-items: center;">
-                <el-main style="padding: 0; display: flex; flex-direction: column; width: 100%; ">
+        <el-aside  width="30%" style="padding-top: 20px; border-left: 1px solid #999; overflow-x: hidden;">
+            <el-container style="display: flex; flex-direction: column; height: 100%; width: 100%; align-items: center; overflow-x: hidden;">
+                <el-main style="padding: 0; display: flex; flex-direction: column; width: 100%; overflow-x: hidden;">
 
-                    <el-space direction="vertical" :size="30" style="max-width: 100%; ">
+                    <el-space direction="vertical" :size="30" style="max-width: 100%; width: 100%; overflow-x: hidden;">
                         <!-- 智算业务id -->
                         <!-- <div class="card"> -->
                         <el-tag type="primary" size="large" class="card-header" >
@@ -463,8 +463,26 @@ export default {
 
 .el-aside .md-editor :deep(pre) {
     overflow-x: auto;
-    white-space: pre-wrap;
-    word-break: break-all;
+    white-space: pre;
+    max-width: 100%;
+}
+
+.el-aside .md-editor :deep(code) {
+    overflow-x: auto;
+    white-space: pre;
+    max-width: 100%;
+    display: inline-block;
+}
+
+/* 任务DAG卡片中的md-editor */
+.el-aside .card .md-editor {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.el-aside .card .md-editor :deep(.md-editor-content) {
+    max-width: 100%;
+    overflow-x: auto;
 }
 
 /* 确保容器可以滚动 */
