@@ -36,7 +36,7 @@
                 </el-col>
             </el-row>
         </el-main>
-        <el-aside  width="30%" style="padding-top: 20px; border-left: 1px solid #999; overflow-x: hidden;">
+        <el-aside style="width: 30%; min-width: 200px; max-width: 400px; padding-top: 20px; border-left: 1px solid #999; overflow-x: hidden;">
             <el-container style="display: flex; flex-direction: column; height: 100%; width: 100%; align-items: center; overflow-x: hidden;">
                 <el-main style="padding: 0; display: flex; flex-direction: column; width: 100%; overflow-x: hidden;">
 
