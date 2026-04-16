@@ -389,11 +389,13 @@ export default {
 }
 
 .card-body {
-
     background-color: #f5f5f5;
     padding: 2px;
     border-radius: 4px;
     border: 1px solid #e0e0e0;
+    overflow-x: auto;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .card-body .empty-text {
@@ -407,6 +409,8 @@ export default {
     margin-top: 12px;
     border-top: 1px dashed #ddd;
     padding-top: 8px;
+    overflow-x: auto;
+    max-width: 100%;
 }
 
 .card-body .json-label {
@@ -420,6 +424,15 @@ export default {
     font-size: 14px;
     color: #333;
     word-wrap: break-word;
+}
+
+.card-body .el-table {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.card-body .el-table__body-wrapper {
+    overflow-x: auto;
 }
 
 /* 确保容器可以滚动 */
