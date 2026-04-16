@@ -455,23 +455,42 @@ export default {
 .el-aside .md-editor {
     max-width: 100%;
     overflow-x: auto;
+    box-sizing: border-box;
 }
 
 .el-aside .md-editor :deep(.md-editor-content) {
+    max-width: 100%;
     overflow-x: auto;
+    box-sizing: border-box;
+}
+
+.el-aside .md-editor :deep(.md-editor-content .markdown-body) {
+    max-width: 100%;
+    overflow-x: auto;
+    box-sizing: border-box;
+}
+
+.el-aside .md-editor :deep(.markdown-body) {
+    max-width: 100%;
+    overflow-x: auto;
+    box-sizing: border-box;
 }
 
 .el-aside .md-editor :deep(pre) {
     overflow-x: auto;
-    white-space: pre;
+    white-space: pre-wrap;
+    word-break: break-all;
     max-width: 100%;
+    min-width: 0;
 }
 
 .el-aside .md-editor :deep(code) {
     overflow-x: auto;
-    white-space: pre;
+    white-space: pre-wrap;
+    word-break: break-all;
     max-width: 100%;
-    display: inline-block;
+    min-width: 0;
+    display: block;
 }
 
 /* 任务DAG卡片中的md-editor */
