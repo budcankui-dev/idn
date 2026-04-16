@@ -602,3 +602,18 @@ export default {
     }
 }
 </style>
+
+<style>
+/* 全局样式修复 md-editor JSON 预览横向溢出 */
+.el-aside pre.v-md-prism-json {
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+    overflow-x: auto !important;
+    max-width: 100% !important;
+}
+
+.el-aside pre.v-md-prism-json code {
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+}
+</style>
