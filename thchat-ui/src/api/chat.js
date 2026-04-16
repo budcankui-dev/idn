@@ -62,6 +62,21 @@ export async function updateChatHistory(sessionId, title) {
     })
 }
 
+// ============ Task (for loading session state) ============
+
+export async function getTasksBySession(sessionId) {
+    try {
+        // 获取所有任务，然后筛选
+        const tasks = await request('/local/tasks', {
+            method: 'GET'
+        })
+        return tasks.find(t => t.session_id === sessionId) || null
+    } catch (error) {
+        console.log('getTasksBySession error:', error)
+        return null
+    }
+}
+
 // ============ Chat Messages ============
 
 export async function getChatMessages(sessionId) {

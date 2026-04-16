@@ -81,13 +81,62 @@ def create_task(
     if existing:
         raise HTTPException(status_code=400, detail="任务已存在")
 
+    # 如果 dag 为空，从 params 填充
+    dag = data.dag if data.dag and len(data.dag) > 0 else {}
+    if not dag:
+        from parser.state_parser import parse_duration, parse_start_time
+        from parser.dag_template import VIDEO_DAG_TEMPLATE, TRAIN_DAG_TEMPLATE
+        import json
+
+        params = data.params.get("参数", {}) if isinstance(data.params, dict) else {}
+        business_type = data.params.get("业务类型", "") if isinstance(data.params, dict) else ""
+
+        modal_map = {
+            "负载均衡模态": "LOAD_BALANCE",
+            "成本优先模态": "COST_CONSTRAINED",
+            "资源保障模态": "RESOURCE_GUARANTEE",
+            "时间优先模态": "TIME_CONSTRAINED",
+        }
+
+        modal = params.get("模态", "时间优先模态")
+        if business_type == "视频AI推理":
+            dag = json.loads(json.dumps(VIDEO_DAG_TEMPLATE))
+            dag["policy_type"] = modal_map.get(modal, "时间优先模态")
+            dag["job_id"] = f"{business_type}_{modal}_{data.session_id}"
+            start_time_str = params.get("开始时间")
+            if start_time_str:
+                dag["submit_ts_ms"] = parse_start_time(start_time_str)
+            duration_str = params.get("期望运行时间")
+            if duration_str:
+                runtime_ms = parse_duration(duration_str, business_type)
+                for node in dag.get("nodes", []):
+                    node["exec"]["est_runtime_ms"] = runtime_ms
+                dag["constraints"]["deadline_ms"] = parse_start_time(start_time_str) + runtime_ms
+        elif business_type == "模型训练":
+            dag = json.loads(json.dumps(TRAIN_DAG_TEMPLATE))
+            dag["policy_type"] = modal_map.get(modal, "时间优先模态")
+            dag["job_id"] = f"{business_type}_{modal}_{data.session_id}"
+            start_time_str = params.get("开始时间")
+            if start_time_str:
+                dag["submit_ts_ms"] = parse_start_time(start_time_str)
+            duration_str = params.get("期望运行时间")
+            if duration_str:
+                runtime_ms = parse_duration(duration_str, business_type)
+                for node in dag.get("nodes", []):
+                    node["exec"]["est_runtime_ms"] = runtime_ms
+                dag["constraints"]["deadline_ms"] = parse_start_time(start_time_str) + runtime_ms
+
+    # 更新 state 中的 dag
+    state = data.state.copy() if isinstance(data.state, dict) else {}
+    state["dag"] = dag
+
     task = Task(
         session_id=data.session_id,
         user_id=current_user["user_id"],
         business=data.business,
-        state=data.state,
+        state=state,
         params=data.params,
-        dag=data.dag
+        dag=dag
     )
     task = TaskCRUD.create(db_session, task)
     return TaskResponse(

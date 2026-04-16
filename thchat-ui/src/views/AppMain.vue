@@ -52,10 +52,24 @@
                         <div class="card"   >
                             <el-tag type="info" class="card-header">
                                 意图解析结果
-                    
+                                <el-tag v-if="intentBusinessType" type="success" size="small" style="margin-left: 8px;">
+                                    {{ intentBusinessType }}
+                                </el-tag>
                             </el-tag>
-            
-                            <v-md-preview   v-if="showIntentPreview && active"  :key="sessionStateIntentText"  :text="sessionStateIntentText" class="card-body"></v-md-preview>
+
+                            <div v-if="showIntentPreview && active" class="card-body">
+                                <!-- 业务参数表格 -->
+                                <el-table v-if="intentParamsList.length > 0" :data="intentParamsList" size="small" border>
+                                    <el-table-column prop="name" label="参数" width="140" />
+                                    <el-table-column prop="value" label="值" />
+                                </el-table>
+                                <span v-else class="empty-text">暂无业务参数</span>
+                                <!-- 原始JSON -->
+                                <div class="json-raw">
+                                    <span class="json-label">原始JSON:</span>
+                                    <v-md-preview :text="sessionStateIntentText"></v-md-preview>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- 任务DAG -->
@@ -72,14 +86,14 @@
                 <el-footer
                     style="text-align: center; width: 100%; border-top: 1px solid #999; display: flex;justify-content: center; align-items: center;">
                    
-                    <el-button 
-                        :style="{ width: '100px' }" 
-                        type="primary" 
-                        :disabled="!canSubmit || isSubmitted|| isSubmitting"
+                    <el-button
+                        :style="{ width: '100px' }"
+                        type="primary"
+                        :disabled="!canSubmit || alreadySubmitted || isSubmitting"
                         :loading="isSubmitting"
                         @click="onClickSubmit">
-                        {{ isSubmitted ? '已提交' : '提交' }}
-                       
+                        {{ alreadySubmitted ? '已提交' : '提交' }}
+
                     </el-button>
                 </el-footer>
             </el-container>
@@ -118,6 +132,17 @@ export default {
         // 当前激活的聊天记录uuid
         active() {
             return this.$store.state.chat.active || '';
+        },
+        // 意图解析 - 业务类型
+        intentBusinessType() {
+            const activeSession = this.$store.getters.activeSession;
+            return activeSession?.state?.intent_result?.["业务类型"] || '';
+        },
+        // 意图解析 - 业务参数列表（用于表格展示）
+        intentParamsList() {
+            const activeSession = this.$store.getters.activeSession;
+            const params = activeSession?.state?.intent_result?.["参数"] || {};
+            return Object.entries(params).map(([name, value]) => ({ name, value: value ?? '-' }));
         },
         sessionStateIntentText() {
             const activeSession = this.$store.getters.activeSession;
@@ -159,8 +184,14 @@ export default {
         canSubmit() {
             const activeSession = this.$store.getters.activeSession;
             // const sessionState = activeSession?.sessionState;
-            
+
             return  this.active && this.active !== "" && activeSession?.state?.workflow === 'dag' ;
+        },
+        // 是否已提交（从 session state 计算）- dag 有内容表示已提交
+        alreadySubmitted() {
+            const activeSession = this.$store.getters.activeSession;
+            const dag = activeSession?.state?.dag || {};
+            return dag && Object.keys(dag).length > 0;
         }
 
     },
@@ -242,6 +273,7 @@ export default {
                 console.log('Submitting task:', taskData);
 
                 await createTask(taskData);
+
                 this.isSubmitted = true;
                 this.$message.success(`任务已提交成功！`);
             } catch (error) {
@@ -347,6 +379,26 @@ export default {
     padding: 2px;
     border-radius: 4px;
     border: 1px solid #e0e0e0;
+}
+
+.card-body .empty-text {
+    display: block;
+    text-align: center;
+    color: #999;
+    padding: 20px;
+}
+
+.card-body .json-raw {
+    margin-top: 12px;
+    border-top: 1px dashed #ddd;
+    padding-top: 8px;
+}
+
+.card-body .json-label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+    display: block;
 }
 
 .card-body code {

@@ -138,16 +138,28 @@ const chat = {
                 // 从 API 加载聊天历史
                 const histories = await chatApi.getChatHistories()
 
-                // 转换为 Session 对象
+                // 转换为 Session 对象，同时获取 session state
                 const sessions = await Promise.all(
                     histories.map(async (h) => {
                         const messages = await chatApi.getChatMessages(h.session_id)
+                        // 从 task 表获取 session state（包含 intent_result 和 dag）
+                        let sessionState = {}
+                        try {
+                            const taskData = await chatApi.getTasksBySession(h.session_id)
+                            if (taskData && taskData.state) {
+                                sessionState = taskData.state
+                            }
+                        } catch (e) {
+                            // task 不存在，保持空 state
+                        }
+
                         return new Session({
                             session_id: h.session_id,
                             title: h.title,
                             created_at: h.created_at,
                             updated_at: h.updated_at,
-                            data: messages
+                            data: messages,
+                            state: sessionState
                         })
                     })
                 )
@@ -230,6 +242,8 @@ const chat = {
         },
 
         setSessionState({ commit, state }, sessionState) {
+            // 只更新本地状态，不同步到后端
+            // DAG 在提交时才保存到数据库
             commit('SET_SESSION_STATE', { sessionId: state.active, sessionState })
         },
 

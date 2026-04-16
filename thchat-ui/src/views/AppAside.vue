@@ -74,7 +74,7 @@
                     </svg>
                     <div class="option-text">用户管理</div>
                 </div>
-                <div class="option" @click="goToPage('/admin/tasks')" v-if="isAdmin">
+                <div class="option" @click="goToPage('/admin/tasks')">
                     <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
                         fill="none">
                         <path d="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15"

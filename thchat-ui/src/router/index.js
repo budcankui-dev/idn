@@ -60,12 +60,13 @@ const routes = [
         path: '/admin',
         name: 'admin',
         component: Layout,
-        meta: { requiresAuth: true, requiresAdmin: true },
+        meta: { requiresAuth: true },
         children: [
             {
                 path: 'users',
                 name: 'userManagement',
-                component: () => import('@/views/admin/userManagement.vue')
+                component: () => import('@/views/admin/userManagement.vue'),
+                meta: { requiresAuth: true, requiresAdmin: true }
             },
             {
                 path: 'tasks',
@@ -89,6 +90,7 @@ router.beforeEach((to, from, next) => {
     if (to.meta.requiresAuth && !token) {
         next('/login')
     } else if (to.meta.requiresAdmin && userInfo.role !== 'admin') {
+        // 只有访问 /admin/users 需要管理员权限，/admin/tasks 普通用户可以访问
         next('/')
     } else {
         next()

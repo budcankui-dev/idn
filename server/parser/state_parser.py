@@ -47,7 +47,7 @@ def parse_duration(user_input: str, business_type: str) -> int:
     return total_ms
 
 # ---------------------- 意图解析 ----------------------
-def parse_intent_output(llm_text: str, state: Optional[State] = None) -> State:
+def parse_intent_output(llm_text: str, state: Optional[State] = None, fill_dag: bool = True) -> State:
     if state is None:
         state = State()
 
@@ -202,7 +202,7 @@ def parse_intent_output(llm_text: str, state: Optional[State] = None) -> State:
         "时间优先模态": "TIME_CONSTRAINED",
     }
     # ---------------------- DAG 填充 ----------------------
-    if state.parse_success and state.stage == "complete":
+    if fill_dag and state.parse_success and state.stage == "complete":
         modal = params.get("模态", "时间优先模态")
 
         if business_type == "视频AI推理":
