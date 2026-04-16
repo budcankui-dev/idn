@@ -87,6 +87,7 @@ def parse_intent_output(llm_text: str, state: Optional[State] = None, fill_dag: 
     # LLM 可能返回近似参数名，自动纠正
     param_rename_map = {
         "训练轮数": "训练轮次",
+        "期望完成时间": "训练完成时间",
     }
     for wrong_name, correct_name in param_rename_map.items():
         if wrong_name in params:

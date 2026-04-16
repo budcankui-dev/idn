@@ -36,15 +36,18 @@
                 </el-col>
             </el-row>
         </el-main>
-        <el-aside style="width: 30%; min-width: 200px; max-width: 400px; padding-top: 20px; border-left: 1px solid #999; overflow-x: hidden;">
+        <el-aside style="width: 30%; min-width: 220px; max-width: 420px; padding: 20px 0 0 8px; border-left: 1px solid #999; overflow-x: hidden;">
             <el-container style="display: flex; flex-direction: column; height: 100%; width: 100%; align-items: center; overflow-x: hidden;">
                 <el-main style="padding: 0; display: flex; flex-direction: column; width: 100%; overflow-x: hidden;">
 
                     <el-space direction="vertical" :size="30" style="max-width: 100%; width: 100%; overflow-x: hidden;">
                         <!-- 智算业务id -->
                         <!-- <div class="card"> -->
-                        <el-tag type="primary" size="large" class="card-header session-id-tag" style="padding: 8px 12px;">
-                            <span class="session-id-text">智算业务id： {{ active ?active:"暂未开始解析"}}</span>
+                        <el-tag type="primary" size="default" class="session-id-tag" style="padding: 6px 10px; width: 100%; box-sizing: border-box; margin-bottom: 2px;">
+                            <span style="font-size: 13px;">智算业务id</span>
+                        </el-tag>
+                        <el-tag type="info" size="default" style="padding: 6px 10px; width: 100%; box-sizing: border-box;">
+                            <span class="session-id-text" style="font-size: 12px; word-break: break-all;">{{ active ? active : "暂未开始解析" }}</span>
                         </el-tag>
                         <!-- </div> -->
 
@@ -154,7 +157,10 @@ export default {
   },
     sessionStateDagText() {
         const activeSession = this.$store.getters.activeSession;
-      return `\`\`\`json\n${JSON.stringify( activeSession?.state?.dag|| {}, null, 2)}\n\`\`\``
+        // 优先读取 state.dag（解析成功但未提交的），其次读取 session.dag（提交后的）
+        // 使用 ?? 而不是 || 避免空对象被短路
+        const dag = activeSession?.state?.dag ?? activeSession?.dag ?? {};
+        return `\`\`\`json\n${JSON.stringify(dag, null, 2)}\n\`\`\``
     },
         sessionState(){
             const activeSession = this.$store.getters.activeSession;
@@ -621,17 +627,6 @@ export default {
 .session-id-tag {
     display: block !important;
     width: 100% !important;
-    max-width: 100% !important;
-    overflow: hidden !important;
     box-sizing: border-box !important;
-}
-
-.session-id-text {
-    display: block;
-    width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    box-sizing: border-box;
 }
 </style>

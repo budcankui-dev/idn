@@ -362,9 +362,9 @@ export default {
                                         data.workflow = "dag"
                                          console.log("dag set", this.active, data)
                                     }
-                                    // 更新 vuex store 中的 session 的state
+                                    // 更新 vuex store 中的 session 的state，dag 需要单独传递
                                     console.log("update", this.active, data)
-                                    this.$store.dispatch('setSessionState', data)
+                                    this.$store.dispatch('setSessionState', data, data.dag)
                                 }
 
                             }
