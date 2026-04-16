@@ -27,6 +27,7 @@ class Session {
         this.sessionId = data.session_id || data.sessionId || ''
         this.title = data.title || ''
         this.state = data.state || {}
+        this.dag = data.dag || {}  // 提交后的 dag，单独存储
         this.data = (data.data || []).map(qa => qa instanceof QA ? qa : new QA(qa))
         this.createdAt = data.created_at || data.createdAt
         this.updatedAt = data.updated_at || data.updatedAt
@@ -62,10 +63,13 @@ const chat = {
         SET_ACTIVE: (state, active) => {
             state.active = active
         },
-        SET_SESSION_STATE: (state, { sessionId, sessionState }) => {
+        SET_SESSION_STATE: (state, { sessionId, sessionState, dag }) => {
             const session = state.chat.list.find(s => s.sessionId === sessionId)
             if (session) {
                 session.state = sessionState
+                if (dag !== undefined) {
+                    session.dag = dag
+                }
             }
         },
         SET_TAB: (state, ins) => {
@@ -142,12 +146,14 @@ const chat = {
                 const sessions = await Promise.all(
                     histories.map(async (h) => {
                         const messages = await chatApi.getChatMessages(h.session_id)
-                        // 从 task 表获取 session state（包含 intent_result 和 dag）
+                        // 从 task 表获取 session state 和 dag
                         let sessionState = {}
+                        let sessionDag = {}
                         try {
                             const taskData = await chatApi.getTasksBySession(h.session_id)
-                            if (taskData && taskData.state) {
-                                sessionState = taskData.state
+                            if (taskData) {
+                                sessionState = taskData.state || {}
+                                sessionDag = taskData.dag || {}
                             }
                         } catch (e) {
                             // task 不存在，保持空 state
@@ -159,7 +165,8 @@ const chat = {
                             created_at: h.created_at,
                             updated_at: h.updated_at,
                             data: messages,
-                            state: sessionState
+                            state: sessionState,
+                            dag: sessionDag
                         })
                     })
                 )
@@ -241,10 +248,10 @@ const chat = {
             }
         },
 
-        setSessionState({ commit, state }, sessionState) {
+        setSessionState({ commit, state }, sessionState, dag) {
             // 只更新本地状态，不同步到后端
             // DAG 在提交时才保存到数据库
-            commit('SET_SESSION_STATE', { sessionId: state.active, sessionState })
+            commit('SET_SESSION_STATE', { sessionId: state.active, sessionState, dag })
         },
 
         async updateSessionTitle({ commit }, { sessionId, title }) {

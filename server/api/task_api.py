@@ -126,9 +126,8 @@ def create_task(
                     node["exec"]["est_runtime_ms"] = runtime_ms
                 dag["constraints"]["deadline_ms"] = parse_start_time(start_time_str) + runtime_ms
 
-    # 更新 state 中的 dag
+    # 保留原始 state，不把 dag 存入 state（dag 只存 dag 字段）
     state = data.state.copy() if isinstance(data.state, dict) else {}
-    state["dag"] = dag
 
     task = Task(
         session_id=data.session_id,

@@ -102,8 +102,8 @@ async def parse_intent_workflow(llm, messages: List[BaseMessage], state: State):
             slot_full_text += chunk.content
             # yield f"data: {json.dumps({'content': chunk.content})}\n\n"
 
-    # 解析状态
-    slot_state = parse_intent_output(slot_full_text, state)
+    # 解析状态（不填充 DAG，DAG 在提交时才填充）
+    slot_state = parse_intent_output(slot_full_text, state, fill_dag=False)
     print("slot_state"+"*" * 20)
     print("slot_state:", slot_state)
 
@@ -122,8 +122,8 @@ async def parse_intent_workflow(llm, messages: List[BaseMessage], state: State):
             full_text += chunk.content
             yield f"data: {json.dumps({'content': chunk.content})}\n\n"
 
-    # 解析最终状态
-    final_state = parse_intent_output(full_text, slot_state)
+    # 解析最终状态（不填充 DAG）
+    final_state = parse_intent_output(full_text, slot_state, fill_dag=False)
     # print("final_state"+"*" * 20)
     # print("final_state:", final_state)
     

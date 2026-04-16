@@ -112,6 +112,7 @@ import loadLive2d from 'live2d-helper'
 import chatStoreHelper from '@/schema/chatStoreHelper'
 import { MdPreview } from 'md-editor-v3';
 import { createTask } from '@/api/task';
+import { getTasksBySession } from '@/api/chat';
 export default {
     name: 'AppMain',
     components: { MdPreview },
@@ -187,10 +188,10 @@ export default {
 
             return  this.active && this.active !== "" && activeSession?.state?.workflow === 'dag' ;
         },
-        // 是否已提交（从 session state 计算）- dag 有内容表示已提交
+        // 是否已提交（从 session dag 判断）- dag 有内容表示已提交
         alreadySubmitted() {
             const activeSession = this.$store.getters.activeSession;
-            const dag = activeSession?.state?.dag || {};
+            const dag = activeSession?.dag || {};
             return dag && Object.keys(dag).length > 0;
         }
 
@@ -268,17 +269,31 @@ export default {
                     business: this.sessionState?.intent_result?.["业务类型"] || 'default',
                     state: this.sessionState || {},
                     params: this.sessionState?.intent_result || {},
-                    dag: this.sessionState?.dag || {}
+                    dag: {}
                 };
                 console.log('Submitting task:', taskData);
 
-                await createTask(taskData);
+                const result = await createTask(taskData);
+
+                // 更新本地 session dag
+                if (result && result.dag && Object.keys(result.dag).length > 0) {
+                    this.$store.dispatch('setSessionState', this.sessionState, result.dag);
+                }
 
                 this.isSubmitted = true;
                 this.$message.success(`任务已提交成功！`);
             } catch (error) {
                 console.log('提交失败:', error);
                 if (error.message && error.message.includes('已存在')) {
+                    // 任务已存在，从已有任务加载 dag
+                    try {
+                        const existingTask = await getTasksBySession(this.active);
+                        if (existingTask && existingTask.dag) {
+                            this.$store.dispatch('setSessionState', this.sessionState, existingTask.dag);
+                        }
+                    } catch (e) {
+                        console.log('加载已有任务失败:', e);
+                    }
                     this.isSubmitted = true;
                     this.$message.success(`已提交，请勿重复提交`);
                 } else {
