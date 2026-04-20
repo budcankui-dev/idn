@@ -111,7 +111,7 @@ class VideoInferenceConfig(BusinessConfig):
     def __init__(self):
         super().__init__(
             business_type=BusinessType.VIDEO_INFERENCE,
-            key_params=["模型名称", "延迟", "视频帧率", "分辨率", "开始时间", "期望运行时间"],
+            key_params=["模型名称", "延迟", "视频帧率", "分辨率", "源终端", "目的终端", "开始时间", "期望运行时间"],
             min_runtime_ms=5 * 60 * 1000,  # 5分钟
             modality="低延时转发模态",
             param_rename_map={
@@ -142,6 +142,14 @@ class VideoInferenceConfig(BusinessConfig):
                 },
                 "期望运行时间": {
                     "validation": None,  # 动态校验，由parse_duration处理
+                    "allowed_values": None,
+                },
+                "源终端": {
+                    "validation": None,
+                    "allowed_values": None,
+                },
+                "目的终端": {
+                    "validation": None,
                     "allowed_values": None,
                 },
             }

@@ -16,6 +16,7 @@ from config.business_config import (
     VideoInferenceConfig,
     BUSINESS_CONFIG_REGISTRY,
 )
+from util.terminal_map import enrich_terminal_params
 
 
 # ---------------------- 时间解析函数 ----------------------
@@ -134,6 +135,13 @@ def parse_intent_output(llm_text: str, state: Optional[State] = None, fill_dag: 
     if config and "模态" not in params:
         params["模态"] = config.modality
         # 同步更新 intent_result，确保前端能获取到预设的模态
+        state.intent_result["参数"] = params
+
+    # ---------------------- 终端IP补全 ----------------------
+    # 源终端和目的终端的IP地址由系统通过工具函数查询补全
+    if config and config.business_type == BusinessType.VIDEO_INFERENCE:
+        params = enrich_terminal_params(params)
+        # 同步更新 intent_result
         state.intent_result["参数"] = params
 
     # ---------------------- 参数校验 ----------------------

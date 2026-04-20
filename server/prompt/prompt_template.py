@@ -23,6 +23,8 @@ def _generate_video_inference_template() -> str:
       "延迟": "2",
       "视频帧率": "25",
       "分辨率": "1920x1080",
+      "源终端": "终端A",
+      "目的终端": "终端B",
       "开始时间": "2026-04-08 09:00",
       "期望运行时间": "45分钟"
   }}
@@ -32,6 +34,8 @@ def _generate_video_inference_template() -> str:
 - 延迟：必须 >0 秒
 - 视频帧率：必须 >0
 - 分辨率：可选"{resolutions[0]}"、"{resolutions[1]}"、"{resolutions[2]}"
+- 源终端：用户指定的视频流来源终端名称（如"终端h1"、"终端h2"等），系统会自动查询其IP地址
+- 目的终端：用户指定的视频流目标终端名称（如"终端h3"、"终端h4"等），系统会自动查询其IP地址
 - 开始时间：必须为有效日期时间格式 "YYYY-MM-DD HH:MM" 且不早于当前时间
 - 期望运行时间：最短运行时间为{config.get_min_runtime_minutes()}分钟
 - 模态：系统预设，无需用户输入，视频AI推理固定为"{config.modality}" """
