@@ -288,8 +288,11 @@ export default {
                 });
             }
 
-            // 获取当前 session state
-            const sessionState = currentSession?.state || {};
+            // 获取当前 session state，确保包含 session_id
+            const sessionState = {
+                ...currentSession?.state || {},
+                session_id: this.active
+            };
 
             let history = [];
             if (this.$store.state.setting.memory) {

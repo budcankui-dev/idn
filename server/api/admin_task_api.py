@@ -17,6 +17,9 @@ class AdminTaskResponse(BaseModel):
     user_id: int
     username: str
     business: str
+    params: dict
+    state: dict
+    dag: dict
     created_at: datetime
     updated_at: datetime
 
@@ -48,6 +51,9 @@ def admin_get_all_tasks(
             user_id=t.user_id,
             username=username,
             business=t.business,
+            params=t.params,
+            state=t.state,
+            dag=t.dag,
             created_at=t.created_at,
             updated_at=t.updated_at
         ))

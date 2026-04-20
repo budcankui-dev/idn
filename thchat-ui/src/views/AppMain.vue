@@ -2,7 +2,7 @@
     <el-container style="height: 100%;">
         <el-main style="height: 100%; padding: 0;">
             <el-row justify="center" style="height: 100%;">
-                <el-col :md="14" :sm="14" :xs="14" style="padding-left: 0;padding-right: 0; ">
+                <el-col :md="14" :sm="14" :xs="24" style="padding-left: 0;padding-right: 0; ">
                     <div class="home" ref="homeRef">
 
                         <el-row :gutter="24" justify="center" style="margin-left: 0;margin-right: 0;">
@@ -36,9 +36,9 @@
                 </el-col>
             </el-row>
         </el-main>
-        <el-aside style="width: 30%; min-width: 220px; max-width: 420px; padding: 20px 0 0 8px; border-left: 1px solid #999; overflow-x: hidden;">
+        <el-aside style="width: 35%; min-width: 380px; max-width: 550px; padding: 20px 0 0 8px; border-left: 1px solid #999; overflow-x: hidden; overflow-y: auto;">
             <el-container style="display: flex; flex-direction: column; height: 100%; width: 100%; align-items: center; overflow-x: hidden;">
-                <el-main style="padding: 0; display: flex; flex-direction: column; width: 100%; overflow-x: hidden;">
+                <el-main style="padding: 0; display: flex; flex-direction: column; width: 100%; overflow-x: hidden; overflow-y: auto;">
 
                     <el-space direction="vertical" :size="30" style="max-width: 100%; width: 100%; overflow-x: hidden;">
                         <!-- 智算业务id -->
@@ -58,6 +58,9 @@
                                 <el-tag v-if="intentBusinessType" type="success" size="small" style="margin-left: 8px;">
                                     {{ intentBusinessType }}
                                 </el-tag>
+                                <el-tag v-if="intentModality" type="warning" size="small" style="margin-left: 4px;">
+                                    {{ intentModality }}
+                                </el-tag>
                             </el-tag>
 
                             <div v-if="showIntentPreview && active" class="card-body" style="padding: 4px;">
@@ -76,12 +79,12 @@
                         </div>
 
                         <!-- 任务DAG -->
-                        <div class="card dag-card" style="padding: 8px;">
+                        <div class="card dag-card" style="padding: 8px; max-height: none;">
                             <el-tag type="warning" class="card-header">
                                 任务DAG
                             </el-tag>
-                            <div class="dag-preview-wrapper">
-                                <v-md-preview v-if="showDagPreview && active" :key="sessionStateDagText" :text="sessionStateDagText" class="card-body" style="padding: 4px;"></v-md-preview>
+                            <div class="dag-preview-wrapper" style="max-height: none; overflow-y: visible;">
+                                <v-md-preview v-if="showDagPreview && active" :key="sessionStateDagText" :text="sessionStateDagText" style="max-height: 600px; overflow-y: auto;"></v-md-preview>
                             </div>
                         </div>
                     </el-space>
@@ -89,7 +92,7 @@
 
                 <el-footer
                     style="text-align: center; width: 100%; border-top: 1px solid #999; display: flex;justify-content: center; align-items: center;">
-                   
+
                     <el-button
                         :style="{ width: '100px' }"
                         type="primary"
@@ -122,7 +125,7 @@ export default {
     components: { MdPreview },
     data() {
         return {
-            
+
             isLive2dLoading: false,
             live2dError: null,
             live2dInstance: null,  // 添加实例引用
@@ -143,26 +146,19 @@ export default {
             const activeSession = this.$store.getters.activeSession;
             return activeSession?.state?.intent_result?.["业务类型"] || '';
         },
+        // 意图解析 - 模态
+        intentModality() {
+            const activeSession = this.$store.getters.activeSession;
+            return activeSession?.state?.intent_result?.["参数"]?.["模态"] || '';
+        },
         // 意图解析 - 业务参数列表（用于表格展示）
         intentParamsList() {
             const activeSession = this.$store.getters.activeSession;
             const params = activeSession?.state?.intent_result?.["参数"] || {};
-            return Object.entries(params).map(([name, value]) => ({ name, value: value ?? '-' }));
+            return Object.entries(params).map(([name, value]) => ({ name, value: String(value) }));
         },
-        sessionStateIntentText() {
-            const activeSession = this.$store.getters.activeSession;
-            // const state=
-            // console.log('计算属性 sessionStateIntentText 重新计算，active:', this.active, 'sessionState.intent_result:', activeSession.state.intent_result);
-             return `\`\`\`json\n${JSON.stringify( activeSession?.state?.intent_result|| {},null,2)}\n\`\`\``;
-  },
-    sessionStateDagText() {
-        const activeSession = this.$store.getters.activeSession;
-        // 优先读取 state.dag（解析成功但未提交的），其次读取 session.dag（提交后的）
-        // 使用 ?? 而不是 || 避免空对象被短路
-        const dag = activeSession?.state?.dag ?? activeSession?.dag ?? {};
-        return `\`\`\`json\n${JSON.stringify(dag, null, 2)}\n\`\`\``
-    },
-        sessionState(){
+        // 会话状态
+        sessionState() {
             const activeSession = this.$store.getters.activeSession;
             // console.log('计算属性 aactiveSession?.state 重新计算，active:', this.active, 'sessionState:', activeSession?.state);
             return activeSession ? { ...activeSession.state } : {};
@@ -176,92 +172,122 @@ export default {
         is_show() {
             return this.$store.state.chat.ready && this.active_session_qa_data.length === 0;
         },
-        // 看板娘启用状态
-        live2dEnabled() {
-            return this.$store.state.setting.live2d_enabled || false;
-        },
-        // 当前看板娘模型
-        currentLive2dModel() {
-            return this.$store.state.setting.live2d_model || null;
-        },
-        // 当前激活的会话对象
-        activeSession() {
-            return this.$store.getters.activeSession;
-        },
-        // 提交按钮是否可用：workflow===\"dag\" 且未提交过
-        canSubmit() {
+        // DAG文本
+        sessionStateDagText() {
             const activeSession = this.$store.getters.activeSession;
-            // const sessionState = activeSession?.sessionState;
-
-            return  this.active && this.active !== "" && activeSession?.state?.workflow === 'dag' ;
+            // 优先读取 state.dag（解析成功但未提交的），其次读取 session.dag（提交后的）
+            // 使用 ?? 而不是 || 避免空对象被短路
+            const dag = activeSession?.state?.dag ?? activeSession?.dag ?? {};
+            return `\`\`\`json\n${JSON.stringify(dag, null, 2)}\n\`\`\``
         },
-        // 是否已提交（从 session dag 判断）- dag 有内容表示已提交
+        sessionStateIntentText() {
+            const activeSession = this.$store.getters.activeSession;
+            const intent_result = activeSession?.state?.intent_result || {};
+            return `\`\`\`json\n${JSON.stringify(intent_result, null, 2)}\n\`\`\``
+        },
+        // 判断当前会话是否已提交过任务
         alreadySubmitted() {
             const activeSession = this.$store.getters.activeSession;
-            const dag = activeSession?.dag || {};
-            return dag && Object.keys(dag).length > 0;
+            // 优先使用当前会话的 dag 状态，而不是组件的 isSubmitted
+            return (activeSession?.dag && Object.keys(activeSession?.dag || {}).length > 0);
+        },
+        // 判断是否可以提交
+        canSubmit() {
+            const activeSession = this.$store.getters.activeSession;
+            return activeSession?.state?.parse_success === true;
         }
-
+    },
+    watch: {
+        active: {
+            handler(newVal, oldVal) {
+                // console.log('watch active:', newVal, oldVal);
+                if (newVal && newVal !== oldVal) {
+                    this.loadSessionData(newVal);
+                }
+            },
+            immediate: true
+        },
+        '$store.state.chat.active': {
+            handler(newVal) {
+                // console.log('$store.state.chat.active watcher:', newVal);
+                if (newVal) {
+                    this.loadSessionData(newVal);
+                }
+            },
+            immediate: true
+        }
+    },
+    mounted() {
+        this.initLive2d();
+        this.checkInitialState();
+    },
+    beforeUnmount() {
+        this.destroyLive2d();
     },
     methods: {
-        refreshIntentPreview() {
-      this.showIntentPreview = false
-      nextTick(() => {
-        this.showIntentPreview = true
-      })
-    },
-    refreshDagPreview() {
-      this.showDagPreview = false
-      nextTick(() => {
-        this.showDagPreview = true
-      })
-    },
-        // 统一处理滚动
-        scrollToBottom() {
-            this.$nextTick(() => {
-                if (this.$refs.homeRef) {
-                    this.$refs.homeRef.scrollTop = this.$refs.homeRef.scrollHeight;
-                }
-            });
-        },
-        // 初始化Live2D
         async initLive2d() {
-            if (window.innerWidth <= 768 || !this.live2dEnabled || !this.currentLive2dModel) {
-                if (this.live2dInstance) {
-                    // 清理现有实例
-                    this.live2dInstance.dispose && this.live2dInstance.dispose();
-                    this.live2dInstance = null;
-                }
-                return;
-            }
+            if (this.isLive2dLoading) return;
 
             this.isLive2dLoading = true;
-            this.live2dError = null;
 
             try {
-                // 清理现有实例
-                if (this.live2dInstance) {
-                    this.live2dInstance.dispose && this.live2dInstance.dispose();
+                await nextTick();
+                const container = document.getElementById('live2d');
+                if (container) {
+                    this.live2dInstance = await loadLive2d(container);
+                    console.log('Live2D initialized successfully');
                 }
-
-                this.live2dInstance = await loadLive2d({
-                    canvas: "live2d",
-                    baseUrl: this.currentLive2dModel.substring(0, this.currentLive2dModel.lastIndexOf('/')),
-                    model: this.currentLive2dModel,
-                    globalFollowPointer: true,
-                    allowSound: true,
-                    height: "800"
-                });
             } catch (error) {
-                console.error('Live2D 加载失败:', error);
-                this.live2dError = error.message || '初始化失败';
+                console.error('Failed to initialize Live2D:', error);
+                this.live2dError = error.message;
             } finally {
                 this.isLive2dLoading = false;
             }
         },
-        /**
-         * 提交会话到后端
-         */
+        destroyLive2d() {
+            if (this.live2dInstance) {
+                try {
+                    this.live2dInstance.destroy();
+                    this.live2dInstance = null;
+                } catch (error) {
+                    console.error('Error destroying Live2D:', error);
+                }
+            }
+        },
+        async loadSessionData(sessionId) {
+            if (!sessionId) return;
+
+            try {
+                // 检查是否已加载过该会话的数据
+                const existingSession = this.$store.getters.activeSession;
+                if (existingSession && existingSession.sessionId === sessionId && existingSession.data && existingSession.data.length > 0) {
+                    console.log('Session data already loaded:', sessionId);
+                    this.isSubmitted = !!(existingSession.dag && Object.keys(existingSession.dag).length > 0);
+                    return;
+                }
+
+                // 获取历史消息
+                const messages = await getTasksBySession(sessionId);
+                if (messages && messages.length > 0) {
+                    const sessionData = messages;
+                    chatStoreHelper.setSessionData(sessionId, sessionData);
+                    this.$store.commit('chat/SET_SESSION_DATA', { sessionId, data: sessionData });
+                    this.$store.commit('chat/SET_ACTIVE', sessionId);
+                    this.isSubmitted = !!(messages[0]?.dag && Object.keys(messages[0]?.dag).length > 0);
+                }
+            } catch (error) {
+                console.error('加载会话数据失败:', error);
+            }
+        },
+        checkInitialState() {
+            const activeId = this.$store.state.chat.active;
+            if (activeId) {
+                this.loadSessionData(activeId);
+            }
+        },
+        goTo(path) {
+            this.$router.push(path);
+        },
         async onClickSubmit() {
             console.log('onClickSubmit called');
             if (!this.canSubmit) {
@@ -292,265 +318,21 @@ export default {
             } catch (error) {
                 console.log('提交失败:', error);
                 if (error.message && error.message.includes('已存在')) {
-                    // 任务已存在，从已有任务加载 dag
-                    try {
-                        const existingTask = await getTasksBySession(this.active);
-                        if (existingTask && existingTask.dag) {
-                            this.$store.dispatch('setSessionState', this.sessionState, existingTask.dag);
-                        }
-                    } catch (e) {
-                        console.log('加载已有任务失败:', e);
-                    }
+                    this.$message.warning('该会话已提交过任务');
                     this.isSubmitted = true;
-                    this.$message.success(`已提交，请勿重复提交`);
                 } else {
-                    this.$message.error(`提交失败: ${error.message}`);
+                    this.$message.error('提交失败:' + (error.message || '未知错误'));
                 }
             } finally {
                 this.isSubmitting = false;
             }
-        },
-        /**
-         * 跳转页面函数
-         * @param path
-         */
-        goTo(path) {
-            this.$router.push(path)
         }
-    },
-    watch: {
-        "$store.state.chat.active": {
-            handler: function () {
-                this.scrollToBottom();
-               this.isSubmitted = false;
-            }
-        },
-        sessionState: {
-        handler(newVal) {
-            this.refreshIntentPreview();
-            this.refreshDagPreview();
-        }
-    },
-        query() {
-            this.scrollToBottom();
-        },
-        currentLive2dModel: {
-            handler: function () {
-                this.initLive2d();
-            }
-        },
-        live2dEnabled: {
-            handler: function () {
-                this.initLive2d();
-            }
-        }
-    },
-    mounted() {
-        this.initLive2d();
-    },
-    created() {
-        this.scrollToBottom();
     }
 }
 </script>
 
 <style lang="scss" scoped>
-.card {
-    background-color: #9babf1;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    padding: 16px;
-    margin-bottom: 20px;
-    max-width: 100%;
-    overflow-x: auto;
-    transition: all 0.3s ease;
-}
-
-.card:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    transform: translateY(-5px);
-}
-
-.card-header {
-    // width: 50%;
-    font-size: 20px;
-    font-weight: bold;
-    // padding: 10px 20px;
-    border-radius: 4px;
-    color: rgba(53, 49, 111, 0.704);
-    // margin-bottom: 12px;
-    display: block;
-}
-
-.card-header[type="success"] {
-    background-color: #4CAF50;
-    /* Green */
-}
-
-.card-header[type="info"] {
-    background-color: #409EFF;
-    /* Blue */
-}
-
-.card-header[type="warning"] {
-    background-color: #FF9800;
-    /* Orange */
-}
-
-.card-body {
-    background-color: #f5f5f5;
-    padding: 2px;
-    border-radius: 4px;
-    border: 1px solid #e0e0e0;
-    overflow-x: auto;
-    max-width: 100%;
-    box-sizing: border-box;
-}
-
-.card-body .empty-text {
-    display: block;
-    text-align: center;
-    color: #999;
-    padding: 20px;
-}
-
-.card-body .json-raw {
-    margin-top: 12px;
-    border-top: 1px dashed #ddd;
-    padding-top: 8px;
-    overflow-x: auto;
-    max-width: 100%;
-}
-
-.card-body .json-label {
-    font-size: 12px;
-    color: #666;
-    margin-bottom: 4px;
-    display: block;
-}
-
-.card-body code {
-    font-size: 14px;
-    color: #333;
-    word-wrap: break-word;
-    overflow-x: auto;
-    max-width: 100%;
-    display: block;
-}
-
-.card-body .el-table {
-    max-width: 100%;
-    overflow-x: auto;
-    table-layout: fixed;
-}
-
-.card-body .el-table .el-table__header th,
-.card-body .el-table .el-table__body td {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.card-body .el-table__body-wrapper {
-    overflow-x: auto;
-}
-
-/* 右侧边栏内容不超出 */
-.el-aside .card-body,
-.el-aside .json-raw,
-.el-aside .el-table,
-.el-aside .md-editor {
-    max-width: 100%;
-    overflow-x: auto;
-    box-sizing: border-box;
-}
-
-.el-aside .md-editor :deep(.md-editor-content) {
-    max-width: 100%;
-    overflow-x: auto;
-    box-sizing: border-box;
-}
-
-.el-aside .md-editor :deep(.md-editor-content .markdown-body) {
-    max-width: 100%;
-    overflow-x: auto;
-    box-sizing: border-box;
-}
-
-.el-aside .md-editor :deep(.markdown-body) {
-    max-width: 100%;
-    overflow-x: auto;
-    box-sizing: border-box;
-}
-
-.el-aside .md-editor :deep(pre),
-.el-aside pre {
-    overflow-x: auto !important;
-    white-space: pre-wrap !important;
-    word-break: break-all !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-}
-
-.el-aside .md-editor :deep(code) {
-    overflow-x: auto;
-    white-space: pre-wrap;
-    word-break: break-all;
-    max-width: 100%;
-    min-width: 0;
-    display: block;
-}
-
-/* 任务DAG卡片中的md-editor */
-.el-aside .card .md-editor,
-.el-aside .v-md-editor-preview {
-    max-width: 100%;
-    overflow-x: auto !important;
-}
-
-.el-aside .card .md-editor :deep(.md-editor-content),
-.el-aside .v-md-editor-preview {
-    max-width: 100%;
-    overflow-x: auto !important;
-}
-
-/* DAG 预览包装器 */
-.dag-card {
-    max-width: 100%;
-    overflow-x: hidden;
-}
-
-.dag-preview-wrapper {
-    max-width: 100%;
-    overflow-x: auto;
-    overflow-y: visible;
-}
-
-.dag-preview-wrapper :deep(.v-md-editor-preview) {
-    max-width: 100%;
-    overflow-x: auto !important;
-}
-
-/* 确保容器可以滚动 */
-.home {
-    height: 100%;
-    overflow-y: scroll;
-    scrollbar-width: none;
-    /* Firefox */
-}
-
-.home::-webkit-scrollbar {
-    display: none;
-    /* Chrome, Safari 和 Opera */
-}
-
-.el-link {
-    margin-right: 8px;
-}
-
-.el-link .el-icon--right.el-icon {
-    vertical-align: text-bottom;
-}
+$animation-time: 0.3s;
 
 .title-container {
     display: -webkit-box;
@@ -566,67 +348,114 @@ export default {
     padding: 20px;
     gap: 4px;
     max-width: 1000px;
-    margin: 2vh auto;
-    width: fit-content;
-    text-align: center;
-    border-radius: 20px;
+    margin: 0 auto;
 }
 
-.title-container .title-line {
-    font-style: normal;
-    font-weight: 700;
-    font-size: 34px;
-    line-height: 52px;
-    color: #1a2029;
-    margin-bottom: 14px;
+.title-line {
+    font-size: 30px;
+    font-weight: bold;
+    color: var(--app-title-color);
+    margin: 0;
+
+    span {
+        color: var(--app-theme-color);
+    }
 }
 
-.title-container .title-line span {
-    color: #2454ff;
+.sub-title-line {
+    font-size: 16px;
+    color: var(--app-small-title-color);
 }
 
-.title-container .sub-title-line {
-    font-size: 15px;
-}
+.home {
+    height: 100%;
+    overflow-y: auto;
+    scrollbar-width: none;
+    padding-bottom: 120px;
 
-/* 修改live2d容器样式 */
-#live2d {
-    // border: 1px solid #000;
-    width: 200px;
-    position: fixed;
-    /* 改为固定定位 */
-    bottom: 82px;
-    /* 固定在底部 */
-    right: -20px;
-    /* 固定在右侧 */
-    z-index: 100;
-    /* 确保在其他元素上层 */
-
-    /* 在小屏幕设备上隐藏live2d */
-    @media screen and (max-width: 768px) {
+    &::-webkit-scrollbar {
         display: none;
     }
 }
-</style>
 
-<style>
-/* 全局样式修复 md-editor JSON 预览横向溢出 */
-.el-aside pre.v-md-prism-json {
-    white-space: pre-wrap !important;
-    word-break: break-all !important;
-    overflow-x: auto !important;
-    max-width: 100% !important;
+#live2d {
+    position: fixed;
+    bottom: 0;
+    left: 20%;
+    width: 200px;
+    height: 250px;
+    z-index: 1;
+    pointer-events: none;
+    // 如果需要隐藏live2d可以设置display:none
 }
 
-.el-aside pre.v-md-prism-json code {
-    white-space: pre-wrap !important;
-    word-break: break-all !important;
+.card {
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+
+    .card-header {
+        font-size: 14px;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+
+    .card-body {
+        font-size: 13px;
+    }
 }
 
-/* 修复会话ID溢出 */
+.json-raw {
+    margin-top: 8px;
+    font-size: 12px;
+
+    .json-label {
+        display: block;
+        margin-bottom: 4px;
+        color: #666;
+    }
+}
+
+.empty-text {
+    color: #999;
+    font-size: 13px;
+}
+
+/* 右侧边栏内容不超出 */
+.el-aside {
+    .el-main {
+        overflow-x: hidden;
+    }
+
+    .el-space {
+        width: 100%;
+
+        :deep(.el-space__item) {
+            width: 100%;
+        }
+    }
+}
+
 .session-id-tag {
-    display: block !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
+    border-radius: 4px;
+}
+
+.dag-preview-wrapper {
+    overflow-y: auto;
+    max-height: none;
+}
+
+@media screen and (max-width: 768px) {
+    .title-line {
+        font-size: 24px;
+    }
+
+    .sub-title-line {
+        font-size: 14px;
+    }
+
+    #live2d {
+        display: none;
+    }
 }
 </style>

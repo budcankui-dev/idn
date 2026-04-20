@@ -1,9 +1,21 @@
-BUSINESS_TEMPLATES = """
-## 通用约束
-- 所有参数值（包括数字）必须使用字符串格式，例如："2"、"25"、"10"
-- 参数解析以解析函数反馈为准，允许用户灵活表述但不能编造
+# server/prompt/prompt_template.py
+"""
+业务提示词模板 - 从配置动态生成
+"""
 
-## 视频AI推理业务参数模板
+from config.business_config import (
+    BUSINESS_CONFIG_REGISTRY,
+    BusinessType,
+    VideoInferenceConfig,
+)
+
+
+def _generate_video_inference_template() -> str:
+    """生成视频AI推理业务模板"""
+    config = BUSINESS_CONFIG_REGISTRY[BusinessType.VIDEO_INFERENCE]
+    resolutions = VideoInferenceConfig.VIDEO_RESOLUTIONS
+
+    return f"""视频AI推理业务参数模板
 {{
   "业务类型": "视频AI推理",
   "参数": {{
@@ -16,15 +28,20 @@ BUSINESS_TEMPLATES = """
   }}
 }}
 视频AI推理参数约束：
-- 模型名称：可选"yolov8"
+- 模型名称：任意模型名均可
 - 延迟：必须 >0 秒
 - 视频帧率：必须 >0
-- 分辨率：可选"1920x1080"、"1280x720"、"3840x2160"
-- 开始时间：必须为有效日期时间格式 "YYYY-MM-DD HH:MM" 且不早于当前时间，其他任何表述都视为非法
-- 期望运行时间：必须为有效持续时间，例如 "45分钟"，视频AI推理最短运行时间为5分钟
-- 模态：系统预设，无需用户输入，视频AI推理固定为"低延时转发模态"
+- 分辨率：可选"{resolutions[0]}"、"{resolutions[1]}"、"{resolutions[2]}"
+- 开始时间：必须为有效日期时间格式 "YYYY-MM-DD HH:MM" 且不早于当前时间
+- 期望运行时间：最短运行时间为{config.get_min_runtime_minutes()}分钟
+- 模态：系统预设，无需用户输入，视频AI推理固定为"{config.modality}" """
 
-## 模型训练业务参数模板
+
+def _generate_model_training_template() -> str:
+    """生成模型训练业务模板"""
+    config = BUSINESS_CONFIG_REGISTRY[BusinessType.MODEL_TRAINING]
+
+    return f"""模型训练业务参数模板
 {{
   "业务类型": "模型训练",
   "参数": {{
@@ -37,11 +54,22 @@ BUSINESS_TEMPLATES = """
   }}
 }}
 模型训练参数约束：
-- 模型名称：可选"resnet"、"mobilenet"、"vgg"
-- 数据集：可选"CIFAR-100"
+- 模型名称：任意模型名均可
+- 数据集：任意数据集名均可
 - 训练轮次：必须为大于0的整数，支持"训练轮数"、"轮数"、"n轮"等表述
-- 开始时间：必须为有效日期时间格式 "YYYY-MM-DD HH:MM" 且不早于当前时间，其他任何表述都视为非法
-- 期望运行时间：必须为有效持续时间，例如 "1小时"，模型训练最短运行时间为30分钟
+- 开始时间：必须为有效日期时间格式 "YYYY-MM-DD HH:MM" 且不早于当前时间
+- 期望运行时间：最短运行时间为{config.get_min_runtime_minutes()}分钟
 - 训练完成时间：必须与"期望运行时间"相同，如果用户说"期望完成时间"或"完成时间"，也映射到此参数
-- 模态：系统预设，无需用户输入，模型训练固定为"智算中心模态"
+- 模态：系统预设，无需用户输入，模型训练固定为"{config.modality}" """
+
+
+# 生成完整的业务模板字符串
+BUSINESS_TEMPLATES = f"""
+## 通用约束
+- 所有参数值（包括数字）必须使用字符串格式，例如："2"、"25"、"10"
+- 参数解析以解析函数反馈为准，允许用户灵活表述但不能编造
+
+{_generate_video_inference_template()}
+
+{_generate_model_training_template()}
 """

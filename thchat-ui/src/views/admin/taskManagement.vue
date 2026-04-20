@@ -16,6 +16,11 @@
                         <el-tag type="success" size="small">{{ row.business }}</el-tag>
                     </template>
                 </el-table-column>
+                <el-table-column prop="modality" label="模态" width="140">
+                    <template #default="{ row }">
+                        {{ row.params?.["参数"]?.["模态"] || '-' }}
+                    </template>
+                </el-table-column>
                 <el-table-column prop="created_at" label="创建时间" width="180">
                     <template #default="{ row }">
                         {{ formatTime(row.created_at) }}
@@ -49,6 +54,9 @@
                 <el-descriptions-item label="会话ID">{{ currentTask.session_id }}</el-descriptions-item>
                 <el-descriptions-item label="业务类型">
                     <el-tag type="success">{{ currentTask.business }}</el-tag>
+                </el-descriptions-item>
+                <el-descriptions-item label="模态">
+                    <el-tag type="warning">{{ currentTask.params?.["参数"]?.["模态"] || '-' }}</el-tag>
                 </el-descriptions-item>
                 <el-descriptions-item label="用户" v-if="isAdmin">{{ currentTask.username }}</el-descriptions-item>
                 <el-descriptions-item label="创建时间">{{ formatTime(currentTask.created_at) }}</el-descriptions-item>

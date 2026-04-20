@@ -41,6 +41,14 @@ class DAGEdge:
         }
 
 
+def _build_job_id(prefix: str, modality: str, session_id: str) -> str:
+    """构建job_id，确保格式正确（无多余下划线）"""
+    parts = [prefix, modality]
+    if session_id:
+        parts.append(session_id)
+    return "_".join(parts)
+
+
 @dataclass
 class DAGTemplate:
     """DAG模板基类"""
@@ -89,12 +97,14 @@ class DAGTemplate:
 class VideoInferenceDAG(DAGTemplate):
     """视频AI推理DAG模板"""
     POLICY_TYPE = "LOW_LATENCY"  # 低延时转发模态
+    MODALITY = "低延时转发模态"
 
     def __init__(self, session_id: str = ""):
+        job_id = _build_job_id("视频AI推理", self.MODALITY, session_id)
         super().__init__(
             job_name="视频AI推理",
             policy_type=self.POLICY_TYPE,
-            job_id=f"视频AI推理_低延时转发模态_{session_id}",
+            job_id=job_id,
             _comment="低延时转发策略：优先保证低延迟",
             nodes=[
                 DAGNode(node_id="video", cpu_units=20, mem_mb=1024, disk_mb=1024),
@@ -110,12 +120,14 @@ class VideoInferenceDAG(DAGTemplate):
 class ModelTrainingDAG(DAGTemplate):
     """模型训练DAG模板"""
     POLICY_TYPE = "INTELLIGENT_CENTER"  # 智算中心模态
+    MODALITY = "智算中心模态"
 
     def __init__(self, session_id: str = ""):
+        job_id = _build_job_id("模型训练", self.MODALITY, session_id)
         super().__init__(
             job_name="模型训练",
             policy_type=self.POLICY_TYPE,
-            job_id=f"模型训练_智算中心模态_{session_id}",
+            job_id=job_id,
             _comment="智算中心策略：智能分配计算资源",
             nodes=[
                 DAGNode(node_id="data", cpu_units=20, mem_mb=1024, disk_mb=2048),

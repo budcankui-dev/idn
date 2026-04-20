@@ -1,9 +1,8 @@
 <template>
     <el-row :gutter="24" justify="center">
-        <el-col :md="16" :sm="16" :xs="16" style="padding-left: 0;padding-right: 0;">
+        <el-col :md="16" :sm="18" :xs="24" style="padding-left: 0;padding-right: 0;">
             <SendBox v-if="isHidden" />
         </el-col>
-        <el-col :md="7" :sm="7" :xs="7"  style="width: 30%; "></el-col>
 
         <span class="copyright">{{ new Date().getFullYear() }} © BUPT.
             <!-- <el-link href="https://github.com/Unagi-cq/BUPT" target="_blank">{{ $t('AppFooter.repository')

@@ -1,3 +1,8 @@
+# server/parser/state_parser.py
+"""
+意图解析器 - 使用 BusinessConfig 统一管理业务配置
+"""
+
 import json
 import re
 from typing import Optional
@@ -5,22 +10,18 @@ from datetime import datetime
 import dateparser
 from parser.state import State
 from parser.dag_template import VideoInferenceDAG, ModelTrainingDAG
+from config.business_config import (
+    get_business_config,
+    BusinessType,
+    VideoInferenceConfig,
+    BUSINESS_CONFIG_REGISTRY,
+)
 
 
-# 最低运行时长阈值：单位毫秒，按业务类型区分
-MIN_RUNTIME_MS = {
-    "视频AI推理": 5 * 60 * 1000,   # 5分钟
-    "模型训练": 30 * 60 * 1000,    # 30分钟
-}
-
-VIDEO_KEY_PARAMS = ["模型名称", "延迟", "视频帧率", "分辨率", "开始时间", "期望运行时间"]
-TRAIN_KEY_PARAMS = ["模型名称", "数据集", "训练轮次", "开始时间", "期望运行时间", "训练完成时间"]
-
-# 视频分辨率可选值
-VIDEO_RESOLUTIONS = ["1920x1080", "1280x720", "3840x2160"]
-
+# ---------------------- 时间解析函数 ----------------------
 
 def parse_start_time(user_input: str) -> int:
+    """解析开始时间，返回毫秒时间戳"""
     dt = dateparser.parse(
         user_input,
         languages=['zh'],
@@ -34,17 +35,41 @@ def parse_start_time(user_input: str) -> int:
 
 
 def parse_duration(user_input: str, business_type: str) -> int:
+    """解析运行时长，返回毫秒"""
     pattern = r'(?:(\d+)\s*小时)?\s*(?:(\d+)\s*分钟)?\s*(?:(\d+)\s*秒)?'
     match = re.search(pattern, user_input)
     if not match:
         raise ValueError("无法解析运行时长")
     hours, minutes, seconds = match.groups(default="0")
     total_ms = int(hours) * 3600 * 1000 + int(minutes) * 60 * 1000 + int(seconds) * 1000
-    min_runtime = MIN_RUNTIME_MS.get(business_type, 5 * 60 * 1000)
+
+    # 从配置获取最低运行时长
+    config = get_business_config(business_type)
+    min_runtime = config.min_runtime_ms if config else 5 * 60 * 1000
+
     if total_ms < min_runtime:
-        raise ValueError(f"运行时长必须大于等于 {min_runtime//1000//60} 分钟")
+        raise ValueError(f"运行时长必须大于等于 {min_runtime // 1000 // 60} 分钟")
     return total_ms
 
+
+# ---------------------- 向后兼容的模块级常量 ----------------------
+# 保留旧接口，指向配置类
+
+# 视频分辨率可选值（向后兼容）
+VIDEO_RESOLUTIONS = VideoInferenceConfig.VIDEO_RESOLUTIONS
+
+# 向后兼容的参数列表（从配置获取）
+VIDEO_KEY_PARAMS = BUSINESS_CONFIG_REGISTRY[BusinessType.VIDEO_INFERENCE].key_params
+TRAIN_KEY_PARAMS = BUSINESS_CONFIG_REGISTRY[BusinessType.MODEL_TRAINING].key_params
+
+
+def get_min_runtime_ms(business_type: str) -> int:
+    """获取最低运行时长（毫秒）"""
+    config = get_business_config(business_type)
+    return config.min_runtime_ms if config else 5 * 60 * 1000
+
+
+# ---------------------- 核心解析函数 ----------------------
 
 def parse_intent_output(llm_text: str, state: Optional[State] = None, fill_dag: bool = True) -> State:
     if state is None:
@@ -81,109 +106,81 @@ def parse_intent_output(llm_text: str, state: Optional[State] = None, fill_dag: 
     business_type = json_res.get("业务类型")
     params = json_res.get("参数", {})
 
+    # 获取业务配置
+    config = get_business_config(business_type)
+
     # ---------------------- 参数名纠正 ----------------------
-    # LLM 可能返回近似参数名，自动纠正（灵活推断，不编造）
-    param_rename_map = {
+    # 通用参数名纠正（在业务类型判断之前应用）
+    COMMON_PARAM_RENAME_MAP = {
         "训练轮数": "训练轮次",
         "轮数": "训练轮次",
         "n轮": "训练轮次",
-        "期望完成时间": "训练完成时间",
-        "完成时间": "训练完成时间",
     }
-    for wrong_name, correct_name in param_rename_map.items():
+    for wrong_name, correct_name in COMMON_PARAM_RENAME_MAP.items():
         if wrong_name in params:
             params[correct_name] = params.pop(wrong_name)
 
+    # 使用配置中的参数名纠正映射
+    if config:
+        for wrong_name, correct_name in config.param_rename_map.items():
+            if wrong_name in params:
+                params[correct_name] = params.pop(wrong_name)
+
     # 移除 LLM 输出为 null 的 key
     params = {k: v for k, v in params.items() if v is not None}
+
+    # ---------------------- 业务模态预设 ----------------------
+    # 模态由系统预设，不依赖用户输入或LLM输出
+    if config and "模态" not in params:
+        params["模态"] = config.modality
+        # 同步更新 intent_result，确保前端能获取到预设的模态
+        state.intent_result["参数"] = params
 
     # ---------------------- 参数校验 ----------------------
     missing_params = []
     reason_params = []
 
-    if business_type == "视频AI推理":
-        for k in VIDEO_KEY_PARAMS:
+    if config:
+        # 使用配置进行参数校验
+        for k in config.key_params:
             v = params.get(k)
             if v is None or v == "":
                 missing_params.append(k)
             else:
-                if k == "模型名称":
-                    pass  # 无额外校验
-                elif k == "延迟":
-                    try:
-                        if float(v) <= 0:
-                            reason_params.append({"param": k, "reason": "必须大于0"})
-                    except:
-                        reason_params.append({"param": k, "reason": "必须为数字"})
-                elif k == "视频帧率":
-                    try:
-                        if float(v) <= 0:
-                            reason_params.append({"param": k, "reason": "必须大于0"})
-                    except:
-                        reason_params.append({"param": k, "reason": "必须为数字"})
-                elif k == "分辨率":
-                    # 支持多种格式：1920x1080, 1920*1080, 1920 1080, 1920X1080
-                    normalized = re.sub(r'[\s*xX]', 'x', str(v).strip())
-                    if not re.match(r'^\d+x\d+$', normalized):
-                        reason_params.append({"param": k, "reason": f"格式应为 {'/'.join(VIDEO_RESOLUTIONS)}"})
-                elif k == "开始时间":
-                    try:
-                        parse_start_time(v)
-                    except Exception as e:
-                        reason_params.append({"param": k, "reason": str(e)})
-                elif k == "期望运行时间":
-                    try:
-                        parse_duration(v, business_type)
-                    except Exception as e:
-                        reason_params.append({"param": k, "reason": str(e)})
+                # 使用配置的校验函数进行校验
+                is_valid, reason = config.validate_param(k, v, params)
+                if not is_valid:
+                    reason_params.append({"param": k, "reason": reason})
 
-    elif business_type == "模型训练":
-        for k in TRAIN_KEY_PARAMS:
-            v = params.get(k)
-            if v is None or v == "":
-                missing_params.append(k)
-            else:
-                if k == "模型名称":
-                    pass
-                elif k == "数据集":
-                    pass
-                elif k == "训练轮次":
-                    try:
-                        if int(v) <= 0:
-                            reason_params.append({"param": k, "reason": "必须大于0"})
-                    except:
-                        reason_params.append({"param": k, "reason": "必须为整数"})
-                elif k == "开始时间":
-                    try:
-                        parse_start_time(v)
-                    except Exception as e:
-                        reason_params.append({"param": k, "reason": str(e)})
-                elif k == "期望运行时间":
-                    try:
-                        parse_duration(v, business_type)
-                    except Exception as e:
-                        reason_params.append({"param": k, "reason": str(e)})
-                elif k == "训练完成时间":
-                    run_time = params.get("期望运行时间")
-                    if run_time is not None and v != run_time:
-                        reason_params.append({"param": k, "reason": "必须与期望运行时间相同"})
-    else:
+        # 特殊校验：训练完成时间必须与期望运行时间相同
+        if config.business_type == BusinessType.MODEL_TRAINING:
+            run_time = params.get("期望运行时间")
+            finish_time = params.get("训练完成时间")
+            if run_time is not None and finish_time is not None and finish_time != run_time:
+                # 检查是否已在reason_params中
+                if not any(r["param"] == "训练完成时间" for r in reason_params):
+                    reason_params.append({"param": "训练完成时间", "reason": "必须与期望运行时间相同"})
+
+    elif business_type:
+        # 未知业务类型
         reason_params.append({"param": "业务类型", "reason": f"未知业务类型: {business_type}"})
         if not business_type:
             missing_params.append("业务类型")
+    else:
+        missing_params.append("业务类型")
 
     state.missing_params = missing_params
     state.reason_params = reason_params
     state.stage = "ask_missing" if missing_params or reason_params else "complete"
     state.parse_success = (
-        business_type in ["视频AI推理", "模型训练"] and
+        config is not None and
         len(missing_params) == 0 and
         len(reason_params) == 0
     )
 
     # ---------------------- DAG 填充 ----------------------
     if fill_dag and state.parse_success and state.stage == "complete":
-        if business_type == "视频AI推理":
+        if config and config.business_type == BusinessType.VIDEO_INFERENCE:
             dag_template = VideoInferenceDAG(session_id=state.session_id)
             start_time_str = params.get("开始时间")
             duration_str = params.get("期望运行时间")
@@ -194,7 +191,7 @@ def parse_intent_output(llm_text: str, state: Optional[State] = None, fill_dag: 
                 dag_template.set_runtime(runtime_ms)
             state.dag = dag_template.to_dict()
 
-        elif business_type == "模型训练":
+        elif config and config.business_type == BusinessType.MODEL_TRAINING:
             dag_template = ModelTrainingDAG(session_id=state.session_id)
             start_time_str = params.get("开始时间")
             duration_str = params.get("期望运行时间")

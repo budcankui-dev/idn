@@ -71,12 +71,15 @@ Thumbs.db
 *.test.js
 *.spec.js
 __tests__/
-tests/
 *.test.ts
 *.spec.ts
 .jest/
 coverage/
 .playwright-cli
+
+# Server tests (allowed)
+!server/tests/
+server/tests/
 
 # SQLite
 *.db
