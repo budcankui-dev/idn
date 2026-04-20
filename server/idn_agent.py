@@ -124,14 +124,8 @@ async def parse_intent_workflow(llm, messages: List[BaseMessage], state: State):
 
     # 解析最终状态（填充 DAG）
     final_state = parse_intent_output(full_text, slot_state, fill_dag=True)
-    print("final_state", "*" * 20)
-    print("final_state:", final_state)
-    print("final_state.dag:", final_state.dag)
-    dumped = final_state.model_dump()
-    print("model_dump() output:", json.dumps(dumped))
-    print("dag in dumped:", dumped.get("dag"))
 
-    yield f"data: {json.dumps(dumped)}\n\n"
+    yield f"data: {json.dumps(final_state.model_dump())}\n\n"
 
     yield "data: [DONE]\n\n"
 

@@ -91,64 +91,49 @@ def create_task(
 
     # 如果 dag 为空，从 params 填充
     dag = data.dag if data.dag and len(data.dag) > 0 else {}
+    print(f"[DEBUG] create_task: data.dag={data.dag}, dag={dag}")
     if not dag:
         from parser.state_parser import parse_duration, parse_start_time
-        from parser.dag_template import VIDEO_DAG_TEMPLATE, TRAIN_DAG_TEMPLATE
-        import json
+        from parser.dag_template import VideoInferenceDAG, ModelTrainingDAG
 
         params = data.params.get("参数", {}) if isinstance(data.params, dict) else {}
         business_type = data.params.get("业务类型", "") if isinstance(data.params, dict) else ""
+        print(f"[DEBUG] create_task: params={params}, business_type={business_type}")
 
-        modal_map = {
-            "负载均衡模态": "LOAD_BALANCE",
-            "成本优先模态": "COST_CONSTRAINED",
-            "资源保障模态": "RESOURCE_GUARANTEE",
-            "时间优先模态": "TIME_CONSTRAINED",
-        }
-
-        modal = params.get("模态", "时间优先模态")
         if business_type == "视频AI推理":
-            dag = json.loads(json.dumps(VIDEO_DAG_TEMPLATE))
-            dag["policy_type"] = modal_map.get(modal, "时间优先模态")
-            dag["job_id"] = f"{business_type}_{modal}_{data.session_id}"
+            dag_template = VideoInferenceDAG(session_id=data.session_id)
             start_time_str = params.get("开始时间")
             if start_time_str:
                 try:
-                    dag["submit_ts_ms"] = parse_start_time(start_time_str)
+                    dag_template.set_submit_ts_ms(parse_start_time(start_time_str))
                 except Exception as e:
                     print(f"解析开始时间失败: {e}")
             duration_str = params.get("期望运行时间")
             if duration_str:
                 try:
                     runtime_ms = parse_duration(duration_str, business_type)
-                    for node in dag.get("nodes", []):
-                        node["exec"]["est_runtime_ms"] = runtime_ms
-                    if start_time_str:
-                        dag["constraints"]["deadline_ms"] = parse_start_time(start_time_str) + runtime_ms
+                    dag_template.set_runtime(runtime_ms)
                 except Exception as e:
                     print(f"解析运行时长失败: {e}")
+            dag = dag_template.to_dict()
         elif business_type == "模型训练":
-            dag = json.loads(json.dumps(TRAIN_DAG_TEMPLATE))
-            dag["policy_type"] = modal_map.get(modal, "时间优先模态")
-            dag["job_id"] = f"{business_type}_{modal}_{data.session_id}"
+            dag_template = ModelTrainingDAG(session_id=data.session_id)
             start_time_str = params.get("开始时间")
-            submit_ts_ms = None
             if start_time_str:
                 try:
-                    submit_ts_ms = parse_start_time(start_time_str)
-                    dag["submit_ts_ms"] = submit_ts_ms
+                    dag_template.set_submit_ts_ms(parse_start_time(start_time_str))
                 except Exception as e:
                     print(f"解析开始时间失败: {e}")
             duration_str = params.get("期望运行时间")
             if duration_str:
                 try:
                     runtime_ms = parse_duration(duration_str, business_type)
-                    for node in dag.get("nodes", []):
-                        node["exec"]["est_runtime_ms"] = runtime_ms
-                    if submit_ts_ms is not None:
-                        dag["constraints"]["deadline_ms"] = submit_ts_ms + runtime_ms
+                    dag_template.set_runtime(runtime_ms)
                 except Exception as e:
                     print(f"解析运行时长失败: {e}")
+            dag = dag_template.to_dict()
+
+    print(f"[DEBUG] create_task: final dag={dag}")
 
     # 保留原始 state，不把 dag 存入 state（dag 只存 dag 字段）
     state = data.state.copy() if isinstance(data.state, dict) else {}
