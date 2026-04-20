@@ -8,20 +8,26 @@ conda activate idn
 # pip install sse_starlette uvicorn websocket-client pyjwt
 # pip install dashscope tavily-python pypdf  faiss-cpu zhipuai
 
-pip install \
-fastapi \
-uvicorn \
-langchain==0.3.14 \
-langchain-core \
-langchain-community \
-langserve \
-pydantic \
-dashscope \
-sqlalchemy \
-dateparser \
-bcrypt PyJWT \
-uviocron \
+# pip install \
+# fastapi \
+# uvicorn \
+# langchain==0.3.14 \
+# langchain-core \
+# langchain-community \
+# langserve \
+# pydantic \
+# dashscope \
+# sqlalchemy \
+# dateparser \
+# bcrypt PyJWT \
+# uviocron \
+pip install -r requirements.txt
 
+# 运行测试
+# 单元测试
+python tests/test_parser.py
+# API集成测试（需要先启动服务器）
+python tests/test_api.py
 
 
 
