@@ -108,9 +108,9 @@ def get_followup_parse_prompt(state: State) -> str:
         # 说明模态是系统预设
         business_type = state.intent_result.get('任务名称', '')
         if business_type == '视频AI推理':
-            flow_text += "- 所有参数均合法且完整，系统已自动补全\"模态\"为视频AI推理预设值\"低延时转发模态\"。\n"
+            flow_text += "- 所有参数均合法且完整，系统已解析\"模态\"为\"低延时转发模态\"。\n"
         elif business_type == '模型训练':
-            flow_text += "- 所有参数均合法且完整，系统已自动补全\"模态\"为模型训练预设值\"智算中心模态\"。\n"
+            flow_text += "- 所有参数均合法且完整，系统已解析\"模态\"为\"智算中心模态\"。\n"
     else:
         flow_text += "- 解析未完全成功，需要用户补充或修正缺失/非法参数。\n"
 

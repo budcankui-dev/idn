@@ -151,7 +151,7 @@ def parse_intent_output(llm_text: str, state: Optional[State] = None, fill_dag: 
 
     # ---------------------- 终端IP补全 ----------------------
     # 源终端和目的终端的IP地址由系统通过工具函数查询补全
-    if config and config.business_type == BusinessType.VIDEO_INFERENCE:
+    if config and config.business_type in (BusinessType.VIDEO_INFERENCE, BusinessType.MODEL_TRAINING):
         params = enrich_terminal_params(params)
         # 同步更新 intent_result
         state.intent_result["参数"] = params

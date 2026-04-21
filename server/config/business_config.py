@@ -162,7 +162,7 @@ class ModelTrainingConfig(BusinessConfig):
     def __init__(self):
         super().__init__(
             business_type=BusinessType.MODEL_TRAINING,
-            key_params=["任务名称", "模型名称", "数据集", "训练轮次", "开始时间", "期望运行时间", "训练完成时间"],
+            key_params=["任务名称", "模型名称", "数据集", "训练轮次", "源终端", "目的终端", "开始时间", "期望运行时间", "训练完成时间"],
             min_runtime_ms=30 * 60 * 1000,  # 30分钟
             modality="智算中心模态",
             param_rename_map={
@@ -180,6 +180,14 @@ class ModelTrainingConfig(BusinessConfig):
                 },
                 "训练轮次": {
                     "validation": validate_positive_int,
+                    "allowed_values": None,
+                },
+                "源终端": {
+                    "validation": None,
+                    "allowed_values": None,
+                },
+                "目的终端": {
+                    "validation": None,
                     "allowed_values": None,
                 },
                 "开始时间": {
