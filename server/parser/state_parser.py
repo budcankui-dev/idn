@@ -104,8 +104,20 @@ def parse_intent_output(llm_text: str, state: Optional[State] = None, fill_dag: 
         return state
 
     state.intent_result = json_res
-    business_type = json_res.get("业务类型")
+    task_name = json_res.get("任务名称") or ""  # 原"业务类型"字段
     params = json_res.get("参数", {})
+
+    # 从任务名称中提取业务类型（用于匹配配置）
+    # 例如 "视频AI推理业务1" -> "视频AI推理", "模型训练实验" -> "模型训练"
+    business_type = None
+    for bt in BusinessType:
+        if bt.value in task_name:
+            business_type = bt.value
+            break
+
+    # 将顶层任务名称同步到params中，用于参数校验
+    if task_name and "任务名称" not in params:
+        params["任务名称"] = task_name
 
     # 获取业务配置
     config = get_business_config(business_type)
@@ -171,11 +183,11 @@ def parse_intent_output(llm_text: str, state: Optional[State] = None, fill_dag: 
 
     elif business_type:
         # 未知业务类型
-        reason_params.append({"param": "业务类型", "reason": f"未知业务类型: {business_type}"})
+        reason_params.append({"param": "任务名称", "reason": f"无法识别的业务类型: {business_type}"})
         if not business_type:
-            missing_params.append("业务类型")
+            missing_params.append("任务名称")
     else:
-        missing_params.append("业务类型")
+        missing_params.append("任务名称")
 
     state.missing_params = missing_params
     state.reason_params = reason_params

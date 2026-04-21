@@ -48,14 +48,14 @@ def get_slot_parse_prompt(state: State = None) -> str:
 开始时间 明天上午4点，期望运行时间 45分钟。
 ### 你的输出：
 ```json{{
-  "业务类型": "视频AI推理",
+  "任务名称": "视频AI推理",
   "参数": {{
       "模型名称": "yolov8",
       "延迟": "2",
       "视频帧率": "30",
       "分辨率": "1920x1080",
-      "源终端": "摄像头1",
-      "目的终端": "服务器A",
+      "源终端": "终端h1",
+      "目的终端": "终端h2",
       "开始时间": "明天上午4点",
       "期望运行时间": "45分钟"
   }}
@@ -66,7 +66,7 @@ def get_slot_parse_prompt(state: State = None) -> str:
 模型选择yolov8，源终端终端h1，目的终端终端h2，其他参数参考历史消息
 ### 你的输出：
 ```json{{
-  "业务类型": "视频AI推理",
+  "任务名称": "视频AI推理",
   "参数": {{
       "模型名称": "yolov8",
       "延迟": "2",
@@ -87,7 +87,7 @@ def get_slot_parse_prompt(state: State = None) -> str:
 def get_followup_parse_prompt(state: State) -> str:
   
     # 解析结果
-    last_state_text = f"## 解析结果（业务类型：{state.intent_result.get('业务类型', '未知')}）\n"
+    last_state_text = f"## 解析结果（任务名称：{state.intent_result.get('任务名称', '未知')}）\n"
     last_state_text += "- 参数:\n"
     for k, v in state.intent_result.get("参数", {}).items():
         last_state_text += f"  - {k}: {v}\n"
@@ -106,7 +106,7 @@ def get_followup_parse_prompt(state: State) -> str:
     if state.parse_success:
         flow_text += "- 解析成功，无需修改参数。\n"
         # 说明模态是系统预设
-        business_type = state.intent_result.get('业务类型', '')
+        business_type = state.intent_result.get('任务名称', '')
         if business_type == '视频AI推理':
             flow_text += "- 所有参数均合法且完整，系统已自动补全\"模态\"为视频AI推理预设值\"低延时转发模态\"。\n"
         elif business_type == '模型训练':
@@ -149,14 +149,14 @@ def get_followup_parse_prompt(state: State) -> str:
 
 ```json
 {{
-  "业务类型": "视频AI推理",
+  "任务名称": "视频AI推理",
   "参数": {{
       "模型名称": null,
       "延迟": "2",
       "视频帧率": "30",
       "分辨率": "1920x1080",
-      "源终端": "摄像头1",
-      "目的终端": "服务器A",
+      "源终端": "终端h1",
+      "目的终端": "终端h2",
       "开始时间": "2026-04-08 09:00",
       "期望运行时间": "45分钟"
   }}
@@ -170,14 +170,14 @@ def get_followup_parse_prompt(state: State) -> str:
 - 参数补全成功，参数解析完成
 ```json
 {{
-  "业务类型": "视频AI推理",
+  "任务名称": "视频AI推理",
   "参数": {{
       "模型名称": "yolov8",
       "延迟": "2",
       "视频帧率": "30",
       "分辨率": "1920x1080",
-      "源终端": "摄像头1",
-      "目的终端": "服务器A",
+      "源终端": "终端h1",
+      "目的终端": "终端h2",
       "开始时间": "2026-04-08 09:00",
       "期望运行时间": "45分钟"
   }}
