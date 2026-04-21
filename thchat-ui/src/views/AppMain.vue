@@ -141,10 +141,10 @@ export default {
         active() {
             return this.$store.state.chat.active || '';
         },
-        // 意图解析 - 业务类型
+        // 意图解析 - 任务名称
         intentBusinessType() {
             const activeSession = this.$store.getters.activeSession;
-            return activeSession?.state?.intent_result?.["业务类型"] || '';
+            return activeSession?.state?.intent_result?.["任务名称"] || '';
         },
         // 意图解析 - 模态
         intentModality() {
@@ -299,7 +299,7 @@ export default {
             try {
                 const taskData = {
                     session_id: String(this.active),
-                    business: this.sessionState?.intent_result?.["业务类型"] || 'default',
+                    business: this.sessionState?.intent_result?.["任务名称"] || 'default',
                     state: this.sessionState || {},
                     params: this.sessionState?.intent_result || {},
                     dag: {}

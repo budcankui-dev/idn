@@ -11,7 +11,7 @@
                 <el-table-column prop="id" label="ID" width="80" />
                 <el-table-column prop="session_id" label="会话ID" width="200" show-overflow-tooltip />
                 <el-table-column prop="username" label="用户" width="120" v-if="isAdmin" />
-                <el-table-column prop="business" label="业务类型" width="140">
+                <el-table-column prop="business" label="任务名称" width="140">
                     <template #default="{ row }">
                         <el-tag type="success" size="small">{{ row.business }}</el-tag>
                     </template>
@@ -52,7 +52,7 @@
             <el-descriptions :column="2" border v-if="currentTask">
                 <el-descriptions-item label="任务ID">{{ currentTask.id }}</el-descriptions-item>
                 <el-descriptions-item label="会话ID">{{ currentTask.session_id }}</el-descriptions-item>
-                <el-descriptions-item label="业务类型">
+                <el-descriptions-item label="任务名称">
                     <el-tag type="success">{{ currentTask.business }}</el-tag>
                 </el-descriptions-item>
                 <el-descriptions-item label="模态">
