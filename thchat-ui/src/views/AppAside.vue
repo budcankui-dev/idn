@@ -86,6 +86,15 @@
                     </svg>
                     <div class="option-text">任务管理</div>
                 </div>
+                <div class="option" @click="goToExternal('/route/')">
+                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
+                        fill="none">
+                        <path d="M4 4H20V20H4V4Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M4 9H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        <path d="M9 4V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <div class="option-text">路由管理</div>
+                </div>
                 <div class="divider" v-if="isAdmin">
                     <div class="border"></div>
                 </div>
@@ -266,6 +275,18 @@ export default {
                 this.$emit('toggle-sidebar');
             }
             this.$router.push(path)
+        },
+
+        /**
+         * 跳转到外部系统
+         * @param path 相对路径，如 /route/
+         */
+        goToExternal(path) {
+            // 在手机模式下,触发收起侧边栏
+            if (this.isMobileDevice()) {
+                this.$emit('toggle-sidebar');
+            }
+            window.location.href = path
         },
 
         /**
