@@ -181,6 +181,13 @@ def parse_intent_output(llm_text: str, state: Optional[State] = None, fill_dag: 
                 if not any(r["param"] == "训练完成时间" for r in reason_params):
                     reason_params.append({"param": "训练完成时间", "reason": "必须与期望运行时间相同"})
 
+        # 特殊校验：源终端和目的终端不能相同
+        src = params.get("源终端")
+        dst = params.get("目的终端")
+        if src and dst and src == dst:
+            if not any(r["param"] == "目的终端" for r in reason_params):
+                reason_params.append({"param": "目的终端", "reason": "目的终端不能与源终端相同"})
+
     elif business_type:
         # 未知业务类型
         reason_params.append({"param": "任务名称", "reason": f"无法识别的业务类型: {business_type}"})
