@@ -97,7 +97,10 @@ def create_task(
         from parser.dag_template import VideoInferenceDAG, ModelTrainingDAG
 
         params = data.params.get("参数", {}) if isinstance(data.params, dict) else {}
-        business_type = data.params.get("业务类型", "") if isinstance(data.params, dict) else ""
+        # 兼容"任务名称"和"业务类型"字段
+        business_type = data.params.get("任务名称", "") if isinstance(data.params, dict) else ""
+        if not business_type:
+            business_type = data.params.get("业务类型", "") if isinstance(data.params, dict) else ""
         print(f"[DEBUG] create_task: params={params}, business_type={business_type}")
 
         if business_type == "视频AI推理":

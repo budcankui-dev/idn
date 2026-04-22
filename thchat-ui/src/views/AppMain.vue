@@ -188,8 +188,8 @@ export default {
         // 判断当前会话是否已提交过任务
         alreadySubmitted() {
             const activeSession = this.$store.getters.activeSession;
-            // 优先使用当前会话的 dag 状态，而不是组件的 isSubmitted
-            return (activeSession?.dag && Object.keys(activeSession?.dag || {}).length > 0);
+            // 通过 job_id 是否存在判断是否已提交（更可靠）
+            return !!(activeSession?.dag?.job_id);
         },
         // 判断是否可以提交
         canSubmit() {
@@ -313,15 +313,26 @@ export default {
                     this.$store.dispatch('setSessionState', this.sessionState, result.dag);
                 }
 
-                this.isSubmitted = true;
                 this.$message.success(`任务已提交成功！`);
             } catch (error) {
-                console.log('提交失败:', error);
-                if (error.message && error.message.includes('已存在')) {
+                console.error('提交失败, error:', error);
+                console.error('error.message:', error.message);
+                const errorMsg = error.message || '';
+                if (errorMsg.includes('已存在') || errorMsg.includes('任务已存在')) {
                     this.$message.warning('该会话已提交过任务');
+                    // 后端说已存在，说明任务已提交，更新本地dag状态防止重复提交
+                    const fakeDag = { job_id: 'already_submitted_' + this.active };
+                    // 直接操作 store 更新 dag
+                    const session = this.$store.state.chat.chat.list.find(s => s.sessionId === this.active);
+                    if (session) {
+                        session.dag = fakeDag;
+                        console.log('Dag updated directly, now job_id:', session.dag?.job_id);
+                    }
+                    // 标记组件状态
                     this.isSubmitted = true;
+                    console.log('after update, alreadySubmitted computed should be true');
                 } else {
-                    this.$message.error('提交失败:' + (error.message || '未知错误'));
+                    this.$message.error('提交失败:' + errorMsg);
                 }
             } finally {
                 this.isSubmitting = false;
