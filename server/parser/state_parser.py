@@ -19,6 +19,45 @@ from config.business_config import (
 from util.terminal_map import enrich_terminal_params
 
 
+# ---------------------- 策略检测函数 ----------------------
+
+DEFAULT_STRATEGY = "RESOURCE_GUARANTEE"
+
+STRATEGY_KEYWORDS = {
+    "TIME_CONSTRAINED": [
+        # 明确表达时间优先策略的词组
+       "更快", "尽快", "最快", "优先时间", "尽快完成", "最短时间", "优先保证时间",
+        "时延敏感", "延迟敏感", "高速", "实时", "优先保证速度",
+    ],
+    "COST_CONSTRAINED": [
+        "成本更低", "低成本", "便宜", "省钱", "节省预算",
+        "最便宜", "费用低", "经济实惠",
+    ],
+    "LOAD_BALANCE": [
+        "负载均衡", "资源竞争少", "不排队", "空闲资源",
+        "高并发", "分布式",
+    ],
+}
+
+
+def detect_routing_strategy(user_input: str) -> str:
+    """从用户输入中检测路由策略，未检测到返回默认策略"""
+    if not user_input:
+        return DEFAULT_STRATEGY
+    text = user_input.lower()
+    # 优先检测 COST 和 LOAD_BALANCE（有明确策略意图）
+    for kw in STRATEGY_KEYWORDS.get("COST_CONSTRAINED", []):
+        if kw in text:
+            return "COST_CONSTRAINED"
+    for kw in STRATEGY_KEYWORDS.get("LOAD_BALANCE", []):
+        if kw in text:
+            return "LOAD_BALANCE"
+    for kw in STRATEGY_KEYWORDS.get("TIME_CONSTRAINED", []):
+        if kw in text:
+            return "TIME_CONSTRAINED"
+    return DEFAULT_STRATEGY
+
+
 # ---------------------- 时间解析函数 ----------------------
 
 def parse_start_time(user_input: str) -> int:
@@ -72,7 +111,17 @@ def get_min_runtime_ms(business_type: str) -> int:
 
 # ---------------------- 核心解析函数 ----------------------
 
-def parse_intent_output(llm_text: str, state: Optional[State] = None, fill_dag: bool = True) -> State:
+def parse_intent_output(llm_text: str, state: Optional[State] = None, fill_dag: bool = True, validate_values: bool = True, user_input: str = "") -> State:
+    """
+    解析 LLM 输出为结构化状态
+
+    Args:
+        llm_text: LLM 原始输出
+        state: 当前状态
+        fill_dag: 是否填充 DAG
+        validate_values: 是否校验参数值合法性（默认True），False时只检查参数是否存在
+        user_input: 用户原始输入，用于策略检测
+    """
     if state is None:
         state = State()
 
@@ -102,6 +151,10 @@ def parse_intent_output(llm_text: str, state: Optional[State] = None, fill_dag: 
         state.code = -1
         state.msg = f"JSON解析失败: {e}"
         return state
+
+    # 保存用户原始输入（用于策略检测，跨调用保留）
+    if user_input and not state.original_input:
+        state.original_input = user_input
 
     state.intent_result = json_res
     task_name = json_res.get("任务名称") or ""  # 原"业务类型"字段
@@ -142,6 +195,12 @@ def parse_intent_output(llm_text: str, state: Optional[State] = None, fill_dag: 
     # 移除 LLM 输出为 null 的 key
     params = {k: v for k, v in params.items() if v is not None}
 
+    # ---------------------- 分辨率格式标准化 ----------------------
+    # 支持 4k/1080p/720p 等别名，自动转为 1920x1080 等标准格式
+    if "分辨率" in params:
+        from config.business_config import normalize_resolution
+        params["分辨率"] = normalize_resolution(params["分辨率"])
+
     # ---------------------- 业务模态预设 ----------------------
     # 模态由系统预设，不依赖用户输入或LLM输出
     if config and "模态" not in params:
@@ -166,14 +225,14 @@ def parse_intent_output(llm_text: str, state: Optional[State] = None, fill_dag: 
             v = params.get(k)
             if v is None or v == "":
                 missing_params.append(k)
-            else:
-                # 使用配置的校验函数进行校验
+            elif validate_values:
+                # 只有开启校验时才检查参数值合法性
                 is_valid, reason = config.validate_param(k, v, params)
                 if not is_valid:
                     reason_params.append({"param": k, "reason": reason})
 
         # 特殊校验：训练完成时间必须与期望运行时间相同
-        if config.business_type == BusinessType.MODEL_TRAINING:
+        if validate_values and config.business_type == BusinessType.MODEL_TRAINING:
             run_time = params.get("期望运行时间")
             finish_time = params.get("训练完成时间")
             if run_time is not None and finish_time is not None and finish_time != run_time:
@@ -182,11 +241,12 @@ def parse_intent_output(llm_text: str, state: Optional[State] = None, fill_dag: 
                     reason_params.append({"param": "训练完成时间", "reason": "必须与期望运行时间相同"})
 
         # 特殊校验：源终端和目的终端不能相同
-        src = params.get("源终端")
-        dst = params.get("目的终端")
-        if src and dst and src == dst:
-            if not any(r["param"] == "目的终端" for r in reason_params):
-                reason_params.append({"param": "目的终端", "reason": "目的终端不能与源终端相同"})
+        if validate_values:
+            src = params.get("源终端")
+            dst = params.get("目的终端")
+            if src and dst and src == dst:
+                if not any(r["param"] == "目的终端" for r in reason_params):
+                    reason_params.append({"param": "目的终端", "reason": "目的终端不能与源终端相同"})
 
     elif business_type:
         # 未知业务类型
@@ -205,10 +265,16 @@ def parse_intent_output(llm_text: str, state: Optional[State] = None, fill_dag: 
         len(reason_params) == 0
     )
 
+    # ---------------------- 策略检测 ----------------------
+    # 优先使用原始用户输入（跨 slot→followup 调用时保留）
+    text_for_strategy = state.original_input or user_input
+    detected_strategy = detect_routing_strategy(text_for_strategy)
+    params["策略"] = detected_strategy
+
     # ---------------------- DAG 填充 ----------------------
     if fill_dag and state.parse_success and state.stage == "complete":
         if config and config.business_type == BusinessType.VIDEO_INFERENCE:
-            dag_template = VideoInferenceDAG(session_id=state.session_id)
+            dag_template = VideoInferenceDAG(session_id=state.session_id, policy_type=detected_strategy)
             start_time_str = params.get("开始时间")
             duration_str = params.get("期望运行时间")
             if start_time_str:
@@ -219,7 +285,7 @@ def parse_intent_output(llm_text: str, state: Optional[State] = None, fill_dag: 
             state.dag = dag_template.to_dict()
 
         elif config and config.business_type == BusinessType.MODEL_TRAINING:
-            dag_template = ModelTrainingDAG(session_id=state.session_id)
+            dag_template = ModelTrainingDAG(session_id=state.session_id, policy_type=detected_strategy)
             start_time_str = params.get("开始时间")
             duration_str = params.get("期望运行时间")
             if start_time_str:

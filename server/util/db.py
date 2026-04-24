@@ -6,6 +6,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class DB:
     _instance = None
     _lock = Lock()  # 线程安全锁
@@ -18,16 +19,16 @@ class DB:
                     cls._instance._init_engine(*args, **kwargs)
         return cls._instance
 
-    def _init_engine(self, url: str):
+    def _init_engine(self, url: str, pool_size: int = 10, max_overflow: int = 20):
         """初始化数据库引擎，带有连接池和错误处理"""
         try:
             self.engine = create_engine(
-                url, 
-                echo=True, 
+                url,
+                echo=True,
                 future=True,
                 poolclass=QueuePool,
-                pool_size=10,
-                max_overflow=20,
+                pool_size=pool_size,
+                max_overflow=max_overflow,
                 pool_pre_ping=True,  # 检测失效连接
                 pool_recycle=3600,  # 1小时回收连接
                 connect_args={
@@ -36,7 +37,7 @@ class DB:
                 }
             )
             self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
-            
+
             # 测试连接
             with self.engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
@@ -53,27 +54,23 @@ class DB:
         return self.SessionLocal()
 
 
-from urllib.parse import quote_plus
-
-# 原始密码
-password = "Bupt@1234"
-
-# 对密码进行 URL encode
-password_encoded = quote_plus(password)
-
-# 拼接数据库 URL
-DATABASE_URL = f"mysql+pymysql://root:{password_encoded}@10.112.249.191:3306/intent?charset=utf8mb4"
-
-# 配置数据库 URL
-# DATABASE_URL = "mysql+pymysql://root:Bupt@1234@10.112.249.191:3306/intent?charset=utf8mb4"
+# 从配置加载数据库 URL
+from config.settings import get_settings
+_settings = get_settings()
+DATABASE_URL = _settings.database.url
 
 # 延迟初始化单例实例
 _db_singleton = None
+
 
 def get_db_singleton():
     """获取 DB 单例实例，首次调用时初始化"""
     global _db_singleton
     if _db_singleton is None:
-        _db_singleton = DB(DATABASE_URL)
+        _db_singleton = DB(
+            DATABASE_URL,
+            pool_size=_settings.database.pool_size,
+            max_overflow=_settings.database.max_overflow
+        )
     return _db_singleton
 

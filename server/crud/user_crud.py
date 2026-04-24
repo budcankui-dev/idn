@@ -25,6 +25,10 @@ class UserCRUD:
         return db.query(User).offset(skip).limit(limit).all()
 
     @staticmethod
+    def get_count(db: Session) -> int:
+        return db.query(User).count()
+
+    @staticmethod
     def update(db: Session, user_obj: User, **kwargs) -> User:
         for key, value in kwargs.items():
             if hasattr(user_obj, key) and key != 'id':

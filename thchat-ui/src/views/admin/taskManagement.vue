@@ -120,8 +120,9 @@ export default {
             this.loading = true
             try {
                 const skip = (this.currentPage - 1) * this.pageSize
-                this.tasks = await getTasks(skip, this.pageSize)
-                this.total = this.tasks.length
+                const response = await getTasks(skip, this.pageSize)
+                this.tasks = response.tasks || response
+                this.total = response.total || this.tasks.length
             } catch (error) {
                 ElMessage.error(error.message || '获取任务列表失败')
             } finally {

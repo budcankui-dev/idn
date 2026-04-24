@@ -69,8 +69,8 @@ export async function logout() {
 }
 
 // 用户管理 API
-export async function listUsers() {
-    return request(USER_API_BASE, {
+export async function listUsers(skip = 0, limit = 20) {
+    return request(USER_API_BASE + '?skip=' + skip + '&limit=' + limit, {
         method: 'GET'
     })
 }

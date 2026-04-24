@@ -9,11 +9,13 @@ from sqlalchemy.orm import Session
 from model.user import User
 from crud.user_crud import UserCRUD
 from util.db import get_db_singleton
+from config.settings import get_settings
 
-# 配置
-SECRET_KEY = "your-secret-key-change-in-production"  # 生产环境应从环境变量读取
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_HOURS = 24 * 7  # 7天
+# 从配置加载认证相关配置
+_settings = get_settings()
+SECRET_KEY = _settings.auth.secret_key
+ALGORITHM = _settings.auth.algorithm
+ACCESS_TOKEN_EXPIRE_HOURS = _settings.auth.access_token_expire_hours
 
 security = HTTPBearer()
 

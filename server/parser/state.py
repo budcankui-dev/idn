@@ -44,3 +44,4 @@ class State(BaseModel):
     dag: dict = {}
     code:int =0
     msg:str = ""
+    original_input: str = ""  # 保留用户原始输入，用于策略检测

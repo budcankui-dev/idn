@@ -71,3 +71,4 @@ def enrich_terminal_params(params: dict) -> dict:
         result["目的终端IP"] = dst_ip
 
     return result
+

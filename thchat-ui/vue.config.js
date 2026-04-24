@@ -5,8 +5,11 @@ module.exports = defineConfig({
     ? '/BUPT/'
     : '/',
   transpileDependencies: true,
+
   devServer: {
     allowedHosts: "all",
+    // port:8010,
+    // open: true,
     client: {
       overlay: false // 禁用错误覆盖层
     },

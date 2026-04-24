@@ -33,25 +33,34 @@ class UserResponse(BaseModel):
     is_active: bool
 
 
-@router.get("", response_model=List[UserResponse])
+class UserListResponse(BaseModel):
+    users: List[UserResponse]
+    total: int
+
+
+@router.get("", response_model=UserListResponse)
 def list_users(
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 20,
     current_user: dict = Depends(get_current_admin),
     db_session: Session = Depends(get_db)
 ):
-    """获取用户列表（仅管理员）"""
+    """获取用户列表（仅管理员）- 支持真实分页"""
     users = UserCRUD.get_all(db_session, skip=skip, limit=limit)
-    return [
-        UserResponse(
-            id=u.id,
-            username=u.username,
-            email=u.email,
-            role=u.role,
-            is_active=u.is_active
-        )
-        for u in users
-    ]
+    total = UserCRUD.get_count(db_session)
+    return UserListResponse(
+        users=[
+            UserResponse(
+                id=u.id,
+                username=u.username,
+                email=u.email,
+                role=u.role,
+                is_active=u.is_active
+            )
+            for u in users
+        ],
+        total=total
+    )
 
 
 @router.post("", response_model=UserResponse)

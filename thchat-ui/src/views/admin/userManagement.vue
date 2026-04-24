@@ -35,6 +35,16 @@
                     </template>
                 </el-table-column>
             </el-table>
+
+            <el-pagination
+                v-if="total > 0"
+                layout="prev, pager, next"
+                :total="total"
+                :page-size="pageSize"
+                :current-page="currentPage"
+                @current-change="handlePageChange"
+                style="margin-top: 20px; text-align: center;"
+            />
         </el-card>
 
         <!-- 创建/编辑对话框 -->
@@ -78,6 +88,9 @@ export default {
         return {
             users: [],
             loading: false,
+            total: 0,
+            pageSize: 20,
+            currentPage: 1,
             showDialog: false,
             editingUser: null,
             saving: false,
@@ -107,12 +120,19 @@ export default {
         async fetchUsers() {
             this.loading = true
             try {
-                this.users = await listUsers()
+                const skip = (this.currentPage - 1) * this.pageSize
+                const response = await listUsers(skip, this.pageSize)
+                this.users = response.users || response
+                this.total = response.total || this.users.length
             } catch (error) {
                 ElMessage.error(error.message || '获取用户列表失败')
             } finally {
                 this.loading = false
             }
+        },
+        handlePageChange(page) {
+            this.currentPage = page
+            this.fetchUsers()
         },
         showCreateDialog() {
             this.editingUser = null

@@ -53,7 +53,8 @@ def _build_job_id(prefix: str, modality: str, session_id: str) -> str:
 class DAGTemplate:
     """DAG模板基类"""
     job_name: str
-    policy_type: str
+    policy_type: str  # 策略: RESOURCE_GUARANTEE / TIME_CONSTRAINED / COST_CONSTRAINED / LOAD_BALANCE
+    modal: str        # 模态: 低延时转发模态 / 智算中心模态
     nodes: List[DAGNode] = field(default_factory=list)
     edges: List[DAGEdge] = field(default_factory=list)
     submit_ts_ms: Optional[int] = None
@@ -83,6 +84,7 @@ class DAGTemplate:
             "job_id": self.job_id,
             "submit_ts_ms": self.submit_ts_ms,
             "policy_type": self.policy_type,
+            "modal": self.modal,
             "job_name": self.job_name,
             "constraints": {
                 "deadline_ms": self.deadline_ms,
@@ -96,46 +98,46 @@ class DAGTemplate:
 
 class VideoInferenceDAG(DAGTemplate):
     """视频AI推理DAG模板"""
-    POLICY_TYPE = "LOW_LATENCY"  # 低延时转发模态
     MODALITY = "低延时转发模态"
+    DEFAULT_POLICY = "RESOURCE_GUARANTEE"
 
-    def __init__(self, session_id: str = ""):
+    def __init__(self, session_id: str = "", policy_type: str = "RESOURCE_GUARANTEE"):
         job_id = _build_job_id("视频AI推理", self.MODALITY, session_id)
         super().__init__(
             job_name="视频AI推理",
-            policy_type=self.POLICY_TYPE,
+            policy_type=policy_type,
+            modal=self.MODALITY,
             job_id=job_id,
-            _comment="低延时转发策略：优先保证低延迟",
+            _comment="低延时转发模态",
             nodes=[
                 DAGNode(node_id="video", cpu_units=20, mem_mb=1024, disk_mb=1024),
                 DAGNode(node_id="infer", cpu_units=10, mem_mb=1024, disk_mb=1024),
             ],
             edges=[
                 DAGEdge(from_node="video", to_node="infer", data_mb=20),
-                DAGEdge(from_node="infer", to_node="video", data_mb=20),
             ]
         )
 
 
 class ModelTrainingDAG(DAGTemplate):
     """模型训练DAG模板"""
-    POLICY_TYPE = "INTELLIGENT_CENTER"  # 智算中心模态
     MODALITY = "智算中心模态"
+    DEFAULT_POLICY = "RESOURCE_GUARANTEE"
 
-    def __init__(self, session_id: str = ""):
+    def __init__(self, session_id: str = "", policy_type: str = "RESOURCE_GUARANTEE"):
         job_id = _build_job_id("模型训练", self.MODALITY, session_id)
         super().__init__(
             job_name="模型训练",
-            policy_type=self.POLICY_TYPE,
+            policy_type=policy_type,
+            modal=self.MODALITY,
             job_id=job_id,
-            _comment="智算中心策略：智能分配计算资源",
+            _comment="智算中心模态",
             nodes=[
-                DAGNode(node_id="data", cpu_units=20, mem_mb=1024, disk_mb=2048),
                 DAGNode(node_id="train", cpu_units=20, mem_mb=2048, disk_mb=2048),
+                DAGNode(node_id="data", cpu_units=20, mem_mb=1024, disk_mb=2048),
             ],
             edges=[
                 DAGEdge(from_node="data", to_node="train", data_mb=8),
-                DAGEdge(from_node="train", to_node="data", data_mb=8),
             ]
         )
 
@@ -144,7 +146,8 @@ class ModelTrainingDAG(DAGTemplate):
 VIDEO_DAG_TEMPLATE = {
     "job_id": "job-video-uuid",
     "submit_ts_ms": None,
-    "policy_type": "LOW_LATENCY",
+    "policy_type": "RESOURCE_GUARANTEE",
+    "modal": "低延时转发模态",
     "job_name": "视频AI推理",
     "constraints": {"deadline_ms": None, "budget": None},
     "nodes": [
@@ -155,13 +158,14 @@ VIDEO_DAG_TEMPLATE = {
         {"from": "video", "to": "infer", "data_mb": 20},
         {"from": "infer", "to": "video", "data_mb": 20},
     ],
-    "_comment": "低延时转发策略",
+    "_comment": "低延时转发模态",
 }
 
 TRAIN_DAG_TEMPLATE = {
     "job_id": "job-train-uuid",
     "submit_ts_ms": None,
-    "policy_type": "INTELLIGENT_CENTER",
+    "policy_type": "RESOURCE_GUARANTEE",
+    "modal": "智算中心模态",
     "job_name": "模型训练",
     "constraints": {"deadline_ms": None, "budget": None},
     "nodes": [
@@ -172,5 +176,5 @@ TRAIN_DAG_TEMPLATE = {
         {"from": "data", "to": "train", "data_mb": 8},
         {"from": "train", "to": "data", "data_mb": 8},
     ],
-    "_comment": "智算中心策略",
+    "_comment": "智算中心模态",
 }

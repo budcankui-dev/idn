@@ -38,12 +38,36 @@ def validate_positive_int(v) -> Tuple[bool, str]:
         return False, "必须为整数"
 
 
+# 分辨率别名映射（模糊匹配）
+RESOLUTION_ALIAS_MAP = {
+    "720p": "1280x720",
+    "1080p": "1920x1080",
+    "4k": "3840x2160",
+    "2k": "2560x1440",
+}
+
+
+def normalize_resolution(v: str) -> str:
+    """将各种分辨率格式标准化为 1920x1080 格式"""
+    normalized = str(v).strip()
+    # 先查别名表
+    if normalized.lower() in RESOLUTION_ALIAS_MAP:
+        return RESOLUTION_ALIAS_MAP[normalized.lower()]
+    # 格式化数字+x+数字
+    normalized = re.sub(r'[\s*xX]', 'x', normalized)
+    return normalized
+
+
 def validate_resolution(v, allowed_values: List[str]) -> Tuple[bool, str]:
-    """校验分辨率格式"""
-    # 支持多种格式：1920x1080, 1920*1080, 1920 1080, 1920X1080
-    normalized = re.sub(r'[\s*xX]', 'x', str(v).strip())
+    """校验分辨率格式，兼容别名"""
+    # 先标准化
+    normalized = normalize_resolution(v)
+    # 检查是否是数字x数字格式
     if not re.match(r'^\d+x\d+$', normalized):
         return False, f"格式应为 {'/'.join(allowed_values)}"
+    # 检查是否在允许列表中
+    if normalized not in allowed_values:
+        return False, f"可选分辨率: {'/'.join(allowed_values)}"
     return True, ""
 
 

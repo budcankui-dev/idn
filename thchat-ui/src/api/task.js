@@ -37,8 +37,8 @@ async function request(url, options = {}) {
 
 // ============ Task (User) ============
 
-export async function getTasks(skip = 0, limit = 100) {
-    return request(API_BASE, {
+export async function getTasks(skip = 0, limit = 20) {
+    return request(API_BASE + '?skip=' + skip + '&limit=' + limit, {
         method: 'GET'
     })
 }

@@ -2,12 +2,12 @@
     <el-container style="height: 100%;">
         <el-main style="height: 100%; padding: 0;">
             <el-row justify="center" style="height: 100%;">
-                <el-col :md="14" :sm="14" :xs="24" style="padding-left: 0;padding-right: 0; ">
+                <el-col :md="18" :sm="20" :xs="24" style="padding-left: 0;padding-right: 0; ">
                     <div class="home" ref="homeRef">
 
-                        <el-row :gutter="24" justify="center" style="margin-left: 0;margin-right: 0;">
+                        <el-row :gutter="12" justify="center" style="margin-left: 0;margin-right: 0;">
                             <!-- <el-row :gutter="24" style="margin-left: 0;margin-right: 0;"> -->
-                            <el-col :md="22" :sm="22" :xs="22">
+                            <el-col :md="24" :sm="24" :xs="24">
                                 <ChatCard :qaId="c['qaId']" :query="c['query']" :answer="c['answer']"
                                     :modelName="c['modelName']" :series="c['series']" :responseTime="c['responseTime']"
                                     :finishTime="c['finishTime']" :files="c['files']" :modelType="c['modelType']"
@@ -36,7 +36,7 @@
                 </el-col>
             </el-row>
         </el-main>
-        <el-aside style="width: 35%; min-width: 380px; max-width: 550px; padding: 20px 0 0 8px; border-left: 1px solid #999; overflow-x: hidden; overflow-y: auto;">
+        <el-aside style="width: 25%; min-width: 300px; max-width: 400px; padding: 20px 0 0 8px; border-left: 1px solid #999; overflow-x: hidden; overflow-y: auto;">
             <el-container style="display: flex; flex-direction: column; height: 100%; width: 100%; align-items: center; overflow-x: hidden;">
                 <el-main style="padding: 0; display: flex; flex-direction: column; width: 100%; overflow-x: hidden; overflow-y: auto;">
 

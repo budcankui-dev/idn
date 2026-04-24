@@ -93,7 +93,7 @@ def create_task(
     dag = data.dag if data.dag and len(data.dag) > 0 else {}
     print(f"[DEBUG] create_task: data.dag={data.dag}, dag={dag}")
     if not dag:
-        from parser.state_parser import parse_duration, parse_start_time
+        from parser.state_parser import parse_duration, parse_start_time, detect_routing_strategy
         from parser.dag_template import VideoInferenceDAG, ModelTrainingDAG
 
         params = data.params.get("参数", {}) if isinstance(data.params, dict) else {}
@@ -101,10 +101,12 @@ def create_task(
         business_type = data.params.get("任务名称", "") if isinstance(data.params, dict) else ""
         if not business_type:
             business_type = data.params.get("业务类型", "") if isinstance(data.params, dict) else ""
-        print(f"[DEBUG] create_task: params={params}, business_type={business_type}")
+        # 从 params 中获取策略（意图解析时检测），未检测到则用默认策略
+        strategy = params.get("策略", "RESOURCE_GUARANTEE")
+        print(f"[DEBUG] create_task: params={params}, business_type={business_type}, strategy={strategy}")
 
         if business_type == "视频AI推理":
-            dag_template = VideoInferenceDAG(session_id=data.session_id)
+            dag_template = VideoInferenceDAG(session_id=data.session_id, policy_type=strategy)
             start_time_str = params.get("开始时间")
             if start_time_str:
                 try:
@@ -120,7 +122,7 @@ def create_task(
                     print(f"解析运行时长失败: {e}")
             dag = dag_template.to_dict()
         elif business_type == "模型训练":
-            dag_template = ModelTrainingDAG(session_id=data.session_id)
+            dag_template = ModelTrainingDAG(session_id=data.session_id, policy_type=strategy)
             start_time_str = params.get("开始时间")
             if start_time_str:
                 try:
