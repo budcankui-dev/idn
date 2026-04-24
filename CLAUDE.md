@@ -124,6 +124,8 @@ Four routing strategies supported via `policy_type` in DAG:
 - `server/idn_agent.py:147` - `/chat/stream` endpoint entry point
 - `server/parser/state_parser.py:114` - `parse_intent_output()` - main parsing logic
 - `server/parser/state_parser.py:43` - `detect_routing_strategy()` - strategy detection
+- `server/parser/state_parser.py:214` - `enrich_terminal_params()` - terminal IP enrichment
 - `server/prompt/workflow_parse_intent.py` - Prompt templates
 - `server/parser/dag_template.py` - DAG structure templates
 - `server/config/business_config.py` - Centralized business configuration and validation
+- `server/util/terminal_map.py:51` - `enrich_terminal_params()` function

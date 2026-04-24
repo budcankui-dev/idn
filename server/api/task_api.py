@@ -46,7 +46,7 @@ class TaskResponse(BaseModel):
 @router.get("", response_model=List[TaskResponse])
 def get_tasks(
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 20,
     current_user: dict = Depends(get_current_user),
     db_session: Session = Depends(get_db)
 ):
@@ -93,7 +93,7 @@ def create_task(
     dag = data.dag if data.dag and len(data.dag) > 0 else {}
     print(f"[DEBUG] create_task: data.dag={data.dag}, dag={dag}")
     if not dag:
-        from parser.state_parser import parse_duration, parse_start_time, detect_routing_strategy
+        from parser.state_parser import parse_duration, parse_start_time
         from parser.dag_template import VideoInferenceDAG, ModelTrainingDAG
 
         params = data.params.get("参数", {}) if isinstance(data.params, dict) else {}
