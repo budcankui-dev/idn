@@ -155,6 +155,7 @@
 </template>
 
 <script>
+import { v4 as uuidv4 } from 'uuid'
 import Setting from './setting/index.vue'
 import About from './about/index.vue'
 import logoDark from '../assets/images/logo_dark_2480.png'
@@ -249,7 +250,7 @@ export default {
                 this.goToPage('/');
             }
             // 创建新会话
-            const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            const sessionId = uuidv4();
             try {
                 await this.$store.dispatch('createSession', {
                     sessionId,
