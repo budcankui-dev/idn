@@ -86,7 +86,7 @@
                     </svg>
                     <div class="option-text">任务管理</div>
                 </div>
-                <div class="option" @click="goToExternal('/route/')">
+                <!-- <div class="option" @click="goToExternal('/route/')">
                     <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
                         fill="none">
                         <path d="M4 4H20V20H4V4Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -94,7 +94,7 @@
                         <path d="M9 4V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                     </svg>
                     <div class="option-text">路由管理</div>
-                </div>
+                </div> -->
                 <div class="divider" v-if="isAdmin">
                     <div class="border"></div>
                 </div>

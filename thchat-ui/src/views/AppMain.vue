@@ -117,6 +117,7 @@
 import { nextTick, ref, computed } from 'vue'
 import loadLive2d from 'live2d-helper'
 import chatStoreHelper from '@/schema/chatStoreHelper'
+import { Session } from '@/schema/chat'
 import { MdPreview } from 'md-editor-v3';
 import { createTask } from '@/api/task';
 import { getTasksBySession } from '@/api/chat';
@@ -175,9 +176,8 @@ export default {
         // DAG文本
         sessionStateDagText() {
             const activeSession = this.$store.getters.activeSession;
-            // 优先读取 state.dag（解析成功但未提交的），其次读取 session.dag（提交后的）
-            // 使用 ?? 而不是 || 避免空对象被短路
-            const dag = activeSession?.state?.dag ?? activeSession?.dag ?? {};
+            // DAG 保存在 session.dag（提交后）或 session.state.dag（未提交但解析成功）
+            const dag = activeSession?.dag ?? activeSession?.state?.dag ?? {};
             return `\`\`\`json\n${JSON.stringify(dag, null, 2)}\n\`\`\``
         },
         sessionStateIntentText() {
@@ -256,24 +256,41 @@ export default {
         },
         async loadSessionData(sessionId) {
             if (!sessionId) return;
+            console.log('loadSessionData called:', sessionId);
 
             try {
-                // 检查是否已加载过该会话的数据
-                const existingSession = this.$store.getters.activeSession;
-                if (existingSession && existingSession.sessionId === sessionId && existingSession.data && existingSession.data.length > 0) {
-                    console.log('Session data already loaded:', sessionId);
-                    this.isSubmitted = !!(existingSession.dag && Object.keys(existingSession.dag).length > 0);
-                    return;
-                }
+                // 总是获取 task 数据来恢复 session state
+                console.log('Fetching task for sessionId:', sessionId);
+                const task = await getTasksBySession(sessionId);
+                console.log('Task result:', task ? 'found' : 'null', task?.state ? 'has state' : 'no state');
 
-                // 获取历史消息
-                const messages = await getTasksBySession(sessionId);
-                if (messages && messages.length > 0) {
-                    const sessionData = messages;
-                    chatStoreHelper.setSessionData(sessionId, sessionData);
-                    this.$store.commit('chat/SET_SESSION_DATA', { sessionId, data: sessionData });
-                    this.$store.commit('chat/SET_ACTIVE', sessionId);
-                    this.isSubmitted = !!(messages[0]?.dag && Object.keys(messages[0]?.dag).length > 0);
+                const existingSession = this.$store.getters.activeSession;
+
+                if (task) {
+                    // 如果会话不存在，创建它
+                    if (!existingSession || existingSession.sessionId !== sessionId) {
+                        console.log('Creating/updating session with task data');
+                        const session = new Session({
+                            session_id: sessionId,
+                            title: task.title || '会话 ' + sessionId.slice(0, 8),
+                            data: task.data || [task],
+                            state: task.state || {},
+                            dag: task.dag || {}
+                        });
+                        this.$store.commit('chat/ADD_SESSION', session);
+                        this.$store.commit('chat/SET_ACTIVE', sessionId);
+                    }
+                    this.isSubmitted = !!(task.dag && Object.keys(task.dag).length > 0);
+
+                    // 从 task 中恢复 session state（意图解析结果）
+                    if (task.state && Object.keys(task.state).length > 0) {
+                        this.$store.dispatch('setSessionState', task.state, task.dag || {});
+                        console.log('Restored session state from task:', sessionId);
+                    }
+                } else if (existingSession && existingSession.sessionId === sessionId && existingSession.data && existingSession.data.length > 0) {
+                    // 没有 task 但会话已有数据（未提交的会话）
+                    console.log('No task found, session exists with data');
+                    this.isSubmitted = !!(existingSession.dag && Object.keys(existingSession.dag).length > 0);
                 }
             } catch (error) {
                 console.error('加载会话数据失败:', error);
