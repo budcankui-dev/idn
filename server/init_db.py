@@ -6,7 +6,6 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from util.db import get_db_singleton
 from model.user import Base as UserBase, User
-from model.chat_session import Base as SessionBase
 from model.chat_history import Base as ChatHistoryBase
 from model.chat_message import Base as ChatMessageBase
 from model.task import Base as TaskBase
@@ -20,7 +19,6 @@ def init_database():
 
     # 创建所有表
     UserBase.metadata.create_all(bind=db.engine)
-    SessionBase.metadata.create_all(bind=db.engine)
     ChatHistoryBase.metadata.create_all(bind=db.engine)
     ChatMessageBase.metadata.create_all(bind=db.engine)
     TaskBase.metadata.create_all(bind=db.engine)

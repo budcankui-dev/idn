@@ -2,7 +2,7 @@
 # 配置文件 - 所有全局配置集中在此
 
 database:
-  host: "10.112.249.191"
+  host: "10.112.204.7"
   port: 3306
   username: "root"
   password: "Bupt@1234"
