@@ -39,6 +39,16 @@ class ChatHistoryCRUD:
         return history_obj
 
     @staticmethod
+    def update_state(db: Session, session_id: str, state: dict) -> Optional[ChatHistory]:
+        """更新会话状态"""
+        history_obj = db.query(ChatHistory).filter(ChatHistory.session_id == session_id).first()
+        if history_obj:
+            history_obj.state = state
+            db.commit()
+            db.refresh(history_obj)
+        return history_obj
+
+    @staticmethod
     def delete(db: Session, history_obj: ChatHistory) -> None:
         db.delete(history_obj)
         db.commit()

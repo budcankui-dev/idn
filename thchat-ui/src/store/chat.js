@@ -146,17 +146,18 @@ const chat = {
                 const sessions = await Promise.all(
                     histories.map(async (h) => {
                         const messages = await chatApi.getChatMessages(h.session_id)
-                        // 从 task 表获取 session state 和 dag
-                        let sessionState = {}
+                        // state 已包含在 chat_history 响应中 (h.state)
+                        // dag 需要从 task 表获取（提交后才有）
+                        let sessionState = h.state || {}
                         let sessionDag = {}
                         try {
                             const taskData = await chatApi.getTasksBySession(h.session_id)
                             if (taskData) {
-                                sessionState = taskData.state || {}
+                                // 已提交会话：task 中的 dag 优先
                                 sessionDag = taskData.dag || {}
                             }
                         } catch (e) {
-                            // task 不存在，保持空 state
+                            // task 不存在，使用 chat_history 中的 state
                         }
 
                         return new Session({
@@ -249,9 +250,12 @@ const chat = {
         },
 
         setSessionState({ commit, state }, sessionState, dag) {
-            // 只更新本地状态，不同步到后端
-            // DAG 在提交时才保存到数据库
+            // 更新本地状态
             commit('SET_SESSION_STATE', { sessionId: state.active, sessionState, dag })
+            // 同步到后端（静默失败，不阻塞流程）
+            chatApi.updateSessionState(state.active, sessionState).catch(err => {
+                console.error('保存 session state 失败:', err)
+            })
         },
 
         async updateSessionTitle({ commit }, { sessionId, title }) {

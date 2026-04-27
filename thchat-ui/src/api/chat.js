@@ -77,6 +77,21 @@ export async function getTasksBySession(sessionId) {
     }
 }
 
+// ============ Session State (for persistence) ============
+
+export async function getSessionState(sessionId) {
+    return request(API_BASE + '/history/' + sessionId + '/state', {
+        method: 'GET'
+    })
+}
+
+export async function updateSessionState(sessionId, state) {
+    return request(API_BASE + '/history/' + sessionId + '/state', {
+        method: 'PUT',
+        body: JSON.stringify({ state })
+    })
+}
+
 // ============ Chat Messages ============
 
 export async function getChatMessages(sessionId) {

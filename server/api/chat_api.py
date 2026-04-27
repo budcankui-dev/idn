@@ -24,6 +24,10 @@ class UpdateSessionRequest(BaseModel):
     title: Optional[str] = None
 
 
+class UpdateStateRequest(BaseModel):
+    state: dict
+
+
 class MessageRequest(BaseModel):
     qa_id: str
     query: Optional[str] = None
@@ -48,8 +52,14 @@ class UpdateMessageRequest(BaseModel):
 class ChatHistoryResponse(BaseModel):
     session_id: str
     title: str
+    state: Optional[dict] = None
     created_at: datetime
     updated_at: datetime
+
+
+class SessionStateResponse(BaseModel):
+    session_id: str
+    state: dict
 
 
 class ChatMessageResponse(BaseModel):
@@ -82,6 +92,7 @@ def get_chat_histories(
         ChatHistoryResponse(
             session_id=h.session_id,
             title=h.title,
+            state=h.state,
             created_at=h.created_at,
             updated_at=h.updated_at
         )
@@ -156,8 +167,54 @@ def update_chat_history(
     return ChatHistoryResponse(
         session_id=history.session_id,
         title=history.title,
+        state=history.state,
         created_at=history.created_at,
         updated_at=history.updated_at
+    )
+
+
+# ============ Session State Endpoints ============
+
+@router.get("/history/{session_id}/state", response_model=SessionStateResponse)
+def get_session_state(
+    session_id: str,
+    current_user: dict = Depends(get_current_user),
+    db_session: Session = Depends(get_db)
+):
+    """获取会话状态（用于刷新后恢复）"""
+    history = ChatHistoryCRUD.get_by_session_id(db_session, session_id)
+    if not history:
+        raise HTTPException(status_code=404, detail="会话不存在")
+
+    if history.user_id != current_user["user_id"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="无权访问此会话")
+
+    return SessionStateResponse(
+        session_id=session_id,
+        state=history.state or {}
+    )
+
+
+@router.put("/history/{session_id}/state", response_model=SessionStateResponse)
+def update_session_state(
+    session_id: str,
+    data: UpdateStateRequest,
+    current_user: dict = Depends(get_current_user),
+    db_session: Session = Depends(get_db)
+):
+    """更新会话状态（实时保存解析结果）"""
+    history = ChatHistoryCRUD.get_by_session_id(db_session, session_id)
+    if not history:
+        raise HTTPException(status_code=404, detail="会话不存在")
+
+    if history.user_id != current_user["user_id"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="无权更新此会话")
+
+    ChatHistoryCRUD.update_state(db_session, session_id, data.state)
+
+    return SessionStateResponse(
+        session_id=session_id,
+        state=data.state
     )
 
 
